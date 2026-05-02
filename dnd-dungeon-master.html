@@ -1,0 +1,931 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>D&D — The Dungeon Master</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet"/>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --parchment:#f4edd8;--parchment-dark:#e8d9b5;--parchment-darker:#d4bf8a;
+  --ink:#2a1f0e;--ink-light:#5c4a2a;--ink-dim:#8a7355;
+  --blood:#8b1a1a;--blood-light:#c0392b;--gold:#b8860b;--gold-light:#d4a017;
+  --stone:#3d3530;--stone-light:#5a504a;--shadow:rgba(20,10,5,0.6);
+  --accent:#1a3a5c;
+}
+body{
+  background:#1a1208;
+  font-family:'Crimson Text',serif;
+  color:var(--ink);
+  min-height:100vh;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  padding:0;
+  overflow-x:hidden;
+  background-image:
+    radial-gradient(ellipse at 20% 50%, rgba(139,90,43,0.15) 0%, transparent 60%),
+    radial-gradient(ellipse at 80% 20%, rgba(90,50,20,0.2) 0%, transparent 50%);
+}
+.app{width:100%;max-width:860px;padding:16px;position:relative;z-index:1;}
+
+/* HEADER */
+.header{text-align:center;padding:24px 16px 20px;margin-bottom:16px;position:relative;}
+.header::after{content:'';display:block;height:2px;background:linear-gradient(90deg,transparent,var(--gold),var(--parchment-darker),var(--gold),transparent);margin-top:16px;}
+.title-rune{font-size:11px;letter-spacing:6px;color:var(--blood);text-transform:uppercase;margin-bottom:8px;font-family:'Cinzel',serif;}
+.title{font-family:'Cinzel',serif;font-size:clamp(28px,5vw,44px);font-weight:700;color:var(--parchment);text-shadow:0 2px 20px rgba(180,100,0,0.5),0 0 60px rgba(180,100,0,0.2);line-height:1.1;}
+.title span{color:var(--gold-light);}
+.subtitle{font-size:14px;color:var(--parchment-darker);letter-spacing:3px;margin-top:6px;font-family:'Cinzel',serif;font-weight:400;}
+
+/* TABS */
+.tabs{display:flex;gap:0;margin-bottom:16px;border:1px solid var(--parchment-darker);border-radius:4px;overflow:hidden;background:rgba(26,18,8,0.8);}
+.tab{flex:1;padding:10px 8px;font-family:'Cinzel',serif;font-size:12px;letter-spacing:1px;color:var(--ink-dim);background:transparent;border:none;cursor:pointer;transition:all .2s;text-align:center;}
+.tab:not(:last-child){border-right:1px solid var(--parchment-darker);}
+.tab.active{background:var(--parchment);color:var(--blood);font-weight:600;}
+.tab:hover:not(.active){background:rgba(244,237,216,0.1);color:var(--parchment);}
+
+/* PANELS */
+.panel{display:none;}
+.panel.active{display:block;}
+
+/* PARCHMENT CARD */
+.card{background:var(--parchment);border:1px solid var(--parchment-darker);border-radius:4px;padding:16px;margin-bottom:12px;box-shadow:0 4px 20px rgba(0,0,0,0.4),inset 0 1px 0 rgba(255,255,255,0.5);}
+.card-title{font-family:'Cinzel',serif;font-size:13px;font-weight:600;color:var(--blood);letter-spacing:2px;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--parchment-darker);}
+.card-title::before{content:'✦ ';}
+
+/* CHAR CREATION */
+.field{margin-bottom:12px;}
+.field label{display:block;font-size:12px;letter-spacing:2px;color:var(--ink-light);font-family:'Cinzel',serif;margin-bottom:5px;text-transform:uppercase;}
+.field input,.field select{width:100%;padding:8px 12px;background:rgba(244,237,216,0.5);border:1px solid var(--parchment-darker);border-radius:3px;font-family:'Crimson Text',serif;font-size:15px;color:var(--ink);outline:none;transition:border-color .2s;}
+.field input:focus,.field select:focus{border-color:var(--gold);}
+.field select{cursor:pointer;}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
+
+/* STAT BOXES */
+.stat-box{background:var(--parchment-dark);border:1px solid var(--parchment-darker);border-radius:4px;padding:10px 6px;text-align:center;position:relative;}
+.stat-name{font-family:'Cinzel',serif;font-size:9px;letter-spacing:1px;color:var(--ink-dim);margin-bottom:4px;}
+.stat-val{font-family:'Cinzel',serif;font-size:22px;font-weight:700;color:var(--ink);line-height:1;}
+.stat-mod{font-size:13px;color:var(--ink-light);margin-top:2px;}
+.stat-roll{position:absolute;top:4px;right:5px;width:18px;height:18px;background:var(--blood);color:var(--parchment);border:none;border-radius:2px;cursor:pointer;font-size:10px;display:flex;align-items:center;justify-content:center;}
+.stat-roll:hover{background:var(--blood-light);}
+
+/* BUTTONS */
+.btn{padding:10px 20px;font-family:'Cinzel',serif;font-size:13px;letter-spacing:2px;border:none;border-radius:3px;cursor:pointer;transition:all .2s;}
+.btn-primary{background:var(--blood);color:var(--parchment);box-shadow:0 2px 8px rgba(139,26,26,0.4);}
+.btn-primary:hover{background:var(--blood-light);transform:translateY(-1px);}
+.btn-primary:active{transform:translateY(0);}
+.btn-secondary{background:transparent;color:var(--blood);border:1px solid var(--blood);}
+.btn-secondary:hover{background:rgba(139,26,26,0.1);}
+.btn-gold{background:var(--gold);color:#1a1208;box-shadow:0 2px 8px rgba(184,134,11,0.4);}
+.btn-gold:hover{background:var(--gold-light);}
+.btn-full{width:100%;padding:12px;}
+.btn-sm{padding:6px 12px;font-size:11px;}
+
+/* ADVENTURE PANEL */
+.scene-box{background:rgba(26,18,8,0.95);border:1px solid var(--parchment-darker);border-radius:4px;padding:16px;margin-bottom:12px;min-height:180px;max-height:420px;overflow-y:auto;color:var(--parchment);}
+.scene-box::-webkit-scrollbar{width:6px;}
+.scene-box::-webkit-scrollbar-track{background:rgba(244,237,216,0.05);}
+.scene-box::-webkit-scrollbar-thumb{background:var(--parchment-darker);border-radius:3px;}
+.dm-msg{margin-bottom:14px;padding-bottom:14px;border-bottom:1px solid rgba(244,237,216,0.08);}
+.dm-msg:last-child{border-bottom:none;margin-bottom:0;padding-bottom:0;}
+.dm-speaker{font-family:'Cinzel',serif;font-size:10px;letter-spacing:3px;color:var(--gold);margin-bottom:6px;}
+.dm-text{font-size:15px;line-height:1.75;color:var(--parchment);}
+.player-msg .dm-speaker{color:var(--parchment-darker);}
+.player-msg .dm-text{color:var(--parchment-darker);font-style:italic;}
+.thinking{display:flex;gap:5px;align-items:center;padding:8px 0;}
+.dot{width:6px;height:6px;border-radius:50%;background:var(--gold);animation:bounce 1s infinite;}
+.dot:nth-child(2){animation-delay:.15s;}
+.dot:nth-child(3){animation-delay:.3s;}
+@keyframes bounce{0%,80%,100%{transform:translateY(0);}40%{transform:translateY(-6px);}}
+
+/* ACTION AREA */
+.action-area{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:end;margin-bottom:10px;}
+.action-input{width:100%;padding:10px 14px;background:var(--parchment);border:1px solid var(--parchment-darker);border-radius:3px;font-family:'Crimson Text',serif;font-size:15px;color:var(--ink);outline:none;resize:none;min-height:48px;max-height:120px;}
+.action-input:focus{border-color:var(--gold);}
+.quick-actions{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;}
+.quick-btn{padding:6px 12px;background:rgba(244,237,216,0.1);border:1px solid var(--parchment-darker);border-radius:3px;color:var(--parchment);font-family:'Cinzel',serif;font-size:10px;letter-spacing:1px;cursor:pointer;transition:all .2s;}
+.quick-btn:hover{background:rgba(244,237,216,0.2);border-color:var(--gold);}
+
+/* CHARACTER SHEET PANEL */
+.hp-bar{height:14px;background:rgba(139,26,26,0.2);border-radius:3px;border:1px solid rgba(139,26,26,0.4);overflow:hidden;margin-top:4px;}
+.hp-fill{height:100%;background:linear-gradient(90deg,var(--blood),var(--blood-light));border-radius:2px;transition:width .5s;}
+.xp-bar{height:8px;background:rgba(184,134,11,0.2);border-radius:3px;border:1px solid rgba(184,134,11,0.3);overflow:hidden;margin-top:4px;}
+.xp-fill{height:100%;background:linear-gradient(90deg,var(--gold),var(--gold-light));border-radius:2px;transition:width .5s;}
+.info-row{display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--parchment-darker);font-size:14px;}
+.info-row:last-child{border-bottom:none;}
+.info-key{color:var(--ink-light);font-family:'Cinzel',serif;font-size:11px;letter-spacing:1px;}
+.info-val{color:var(--ink);font-weight:600;}
+.inventory-list{list-style:none;display:flex;flex-direction:column;gap:4px;}
+.inv-item{padding:5px 8px;background:var(--parchment-dark);border:1px solid var(--parchment-darker);border-radius:3px;font-size:13px;color:var(--ink);}
+.inv-item::before{content:'⚔ ';color:var(--ink-dim);font-size:10px;}
+
+/* DICE ROLLER */
+.dice-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px;}
+.die-btn{padding:14px 8px;background:var(--stone);border:2px solid var(--stone-light);border-radius:6px;color:var(--parchment);font-family:'Cinzel',serif;font-size:16px;cursor:pointer;transition:all .2s;display:flex;flex-direction:column;align-items:center;gap:3px;}
+.die-btn:hover{border-color:var(--gold);transform:translateY(-2px);}
+.die-btn:active{transform:translateY(1px) scale(0.97);}
+.die-label{font-size:9px;letter-spacing:1px;color:var(--parchment-darker);}
+.roll-result{background:rgba(26,18,8,0.9);border:1px solid var(--gold);border-radius:4px;padding:16px;text-align:center;margin-bottom:12px;min-height:70px;display:flex;flex-direction:column;justify-content:center;}
+.roll-num{font-family:'Cinzel',serif;font-size:42px;color:var(--gold-light);font-weight:700;line-height:1;animation:rollIn .3s ease;}
+.roll-label{font-size:12px;color:var(--parchment-darker);letter-spacing:2px;margin-top:4px;}
+@keyframes rollIn{from{transform:scale(1.3) rotate(-5deg);opacity:0;}to{transform:scale(1) rotate(0);opacity:1;}}
+.roll-history{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px;}
+.roll-chip{padding:3px 8px;background:rgba(244,237,216,0.08);border:1px solid rgba(244,237,216,0.15);border-radius:12px;font-size:11px;color:var(--parchment-darker);font-family:'Cinzel',serif;}
+.roll-chip.high{border-color:var(--gold);color:var(--gold-light);}
+.roll-chip.low{border-color:var(--blood);color:var(--blood-light);}
+
+/* SETUP SCREEN */
+.setup{background:rgba(26,18,8,0.85);border:1px solid var(--parchment-darker);border-radius:6px;padding:20px;margin-bottom:12px;}
+.setup-title{font-family:'Cinzel',serif;font-size:18px;color:var(--gold-light);margin-bottom:6px;text-align:center;}
+.setup-sub{font-size:13px;color:var(--parchment-darker);text-align:center;margin-bottom:16px;line-height:1.6;}
+.key-input{width:100%;padding:10px 14px;background:rgba(244,237,216,0.05);border:1px solid var(--parchment-darker);border-radius:3px;font-family:'Crimson Text',serif;font-size:15px;color:var(--parchment);outline:none;margin-bottom:10px;}
+.key-input:focus{border-color:var(--gold);}
+.status-msg{font-size:12px;text-align:center;margin-top:6px;letter-spacing:1px;}
+.status-ok{color:#6db36d;}.status-err{color:var(--blood-light);}
+
+/* DIVIDER */
+.divider{display:flex;align-items:center;gap:10px;margin:12px 0;color:var(--parchment-darker);font-size:12px;letter-spacing:3px;font-family:'Cinzel',serif;}
+.divider::before,.divider::after{content:'';flex:1;height:1px;background:var(--parchment-darker);}
+
+/* CONDITIONAL */
+.hidden{display:none!important;}
+
+/* WORLD CHOOSER */
+.world-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;}
+.world-card{padding:14px;background:rgba(26,18,8,0.7);border:1px solid var(--parchment-darker);border-radius:4px;cursor:pointer;transition:all .2s;text-align:left;}
+.world-card:hover,.world-card.selected{border-color:var(--gold);background:rgba(184,134,11,0.1);}
+.world-card.selected::before{content:'✦ ';color:var(--gold);}
+.world-icon{font-size:24px;margin-bottom:6px;}
+.world-name{font-family:'Cinzel',serif;font-size:12px;color:var(--parchment);margin-bottom:3px;}
+.world-desc{font-size:11px;color:var(--parchment-darker);line-height:1.4;}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="header">
+    <div class="title-rune">✦ Enter if you dare ✦</div>
+    <div class="title">Dungeon<span>&</span>Dragons</div>
+    <div class="subtitle">AI Dungeon Master</div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('adventure',this)">⚔ Adventure</button>
+    <button class="tab" onclick="switchTab('character',this)">📜 Character</button>
+    <button class="tab" onclick="switchTab('dice',this)">🎲 Dice</button>
+    <button class="tab" onclick="switchTab('setup',this)">⚙ Setup</button>
+  </div>
+
+  <!-- ADVENTURE TAB -->
+  <div class="panel active" id="tab-adventure">
+    <div id="no-char-msg" class="card">
+      <div style="text-align:center;padding:16px 0;">
+        <div style="font-size:36px;margin-bottom:10px;">📜</div>
+        <div style="font-family:'Cinzel',serif;font-size:16px;color:var(--blood);margin-bottom:8px;">No Hero Created</div>
+        <div style="font-size:14px;color:var(--ink-light);margin-bottom:14px;">Create your character to begin your adventure, brave soul.</div>
+        <button class="btn btn-primary" onclick="switchTab('character',null)">Create Your Hero</button>
+      </div>
+    </div>
+    <div id="adventure-area" class="hidden">
+      <div class="card" style="padding:10px 14px;margin-bottom:12px;">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div style="flex:1;">
+            <div style="font-family:'Cinzel',serif;font-size:11px;color:var(--blood);margin-bottom:3px;">❤ HEALTH</div>
+            <div class="hp-bar"><div class="hp-fill" id="adv-hp-bar" style="width:100%"></div></div>
+            <div style="font-size:11px;color:var(--ink-dim);margin-top:2px;"><span id="adv-hp">—</span></div>
+          </div>
+          <div style="flex:1;">
+            <div style="font-family:'Cinzel',serif;font-size:11px;color:var(--gold);margin-bottom:3px;">✦ EXPERIENCE</div>
+            <div class="xp-bar"><div class="xp-fill" id="adv-xp-bar" style="width:0%"></div></div>
+            <div style="font-size:11px;color:var(--ink-dim);margin-top:2px;">Level <span id="adv-level">1</span></div>
+          </div>
+          <div style="text-align:right;">
+            <div style="font-family:'Cinzel',serif;font-size:11px;color:var(--ink-dim);">Gold</div>
+            <div style="font-family:'Cinzel',serif;font-size:16px;color:var(--gold-light);">🪙 <span id="adv-gold">0</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="scene-box" id="scene-box"></div>
+      <div id="no-key-adv" class="card hidden" style="margin-bottom:10px;">
+        <div style="text-align:center;font-size:13px;color:var(--blood);font-family:'Cinzel',serif;">⚠ Add your Anthropic API key in the Setup tab to summon the Dungeon Master</div>
+      </div>
+      <div class="quick-actions">
+        <button class="quick-btn" onclick="quickAction('Look around and describe the area in detail')">🔍 Look Around</button>
+        <button class="quick-btn" onclick="quickAction('Check my inventory and current status')">🎒 Inventory</button>
+        <button class="quick-btn" onclick="quickAction('I attack the nearest enemy!')">⚔ Attack!</button>
+        <button class="quick-btn" onclick="quickAction('I try to hide in the shadows')">🌑 Hide</button>
+        <button class="quick-btn" onclick="quickAction('I search for traps or hidden secrets')">🔎 Search</button>
+        <button class="quick-btn" onclick="quickAction('I try to negotiate or talk my way through')">💬 Parley</button>
+      </div>
+      <div class="action-area">
+        <textarea class="action-input" id="action-input" placeholder="What do you do? Speak your action..." rows="2" onkeydown="handleKey(event)"></textarea>
+        <button class="btn btn-primary" onclick="sendAction()" id="send-btn">Send ↵</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CHARACTER TAB -->
+  <div class="panel" id="tab-character">
+    <div id="char-create">
+      <div class="card">
+        <div class="card-title">Forge Your Hero</div>
+        <div class="field"><label>Hero Name</label><input type="text" id="char-name" placeholder="Enter your name..." maxlength="30"/></div>
+        <div class="grid2">
+          <div class="field"><label>Race</label>
+            <select id="char-race">
+              <option>Human</option><option>Elf</option><option>Dwarf</option><option>Halfling</option>
+              <option>Dragonborn</option><option>Gnome</option><option>Half-Orc</option><option>Tiefling</option>
+            </select>
+          </div>
+          <div class="field"><label>Class</label>
+            <select id="char-class">
+              <option>Fighter</option><option>Wizard</option><option>Rogue</option><option>Cleric</option>
+              <option>Ranger</option><option>Paladin</option><option>Barbarian</option><option>Bard</option>
+              <option>Druid</option><option>Warlock</option>
+            </select>
+          </div>
+        </div>
+        <div class="field"><label>Background</label>
+          <select id="char-bg">
+            <option>Soldier</option><option>Criminal</option><option>Noble</option><option>Hermit</option>
+            <option>Sage</option><option>Outlander</option><option>Folk Hero</option><option>Acolyte</option>
+          </select>
+        </div>
+        <div class="divider">Ability Scores</div>
+        <div class="grid3" id="stat-grid">
+          <div class="stat-box"><div class="stat-name">STR</div><div class="stat-val" id="s-str">10</div><div class="stat-mod" id="m-str">+0</div><button class="stat-roll" onclick="rollStat('str')" title="Roll">🎲</button></div>
+          <div class="stat-box"><div class="stat-name">DEX</div><div class="stat-val" id="s-dex">10</div><div class="stat-mod" id="m-dex">+0</div><button class="stat-roll" onclick="rollStat('dex')" title="Roll">🎲</button></div>
+          <div class="stat-box"><div class="stat-name">CON</div><div class="stat-val" id="s-con">10</div><div class="stat-mod" id="m-con">+0</div><button class="stat-roll" onclick="rollStat('con')" title="Roll">🎲</button></div>
+          <div class="stat-box"><div class="stat-name">INT</div><div class="stat-val" id="s-int">10</div><div class="stat-mod" id="m-int">+0</div><button class="stat-roll" onclick="rollStat('int')" title="Roll">🎲</button></div>
+          <div class="stat-box"><div class="stat-name">WIS</div><div class="stat-val" id="s-wis">10</div><div class="stat-mod" id="m-wis">+0</div><button class="stat-roll" onclick="rollStat('wis')" title="Roll">🎲</button></div>
+          <div class="stat-box"><div class="stat-name">CHA</div><div class="stat-val" id="s-cha">10</div><div class="stat-mod" id="m-cha">+0</div><button class="stat-roll" onclick="rollStat('cha')" title="Roll">🎲</button></div>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:12px;margin-bottom:14px;">
+          <button class="btn btn-secondary" onclick="rollAllStats()" style="flex:1;">🎲 Roll All Stats</button>
+          <button class="btn btn-secondary" onclick="standardArray()" style="flex:1;">Standard Array</button>
+        </div>
+        <div class="divider">Choose Your World</div>
+        <div class="world-grid">
+          <div class="world-card selected" id="world-classic" onclick="selectWorld('classic')"><div class="world-icon">🏰</div><div class="world-name">Forgotten Realms</div><div class="world-desc">Classic high fantasy, dungeons and epic quests</div></div>
+          <div class="world-card" id="world-dark" onclick="selectWorld('dark')"><div class="world-icon">🌑</div><div class="world-name">Dark Horror</div><div class="world-desc">Gothic horror, undead menace and cursed lands</div></div>
+          <div class="world-card" id="world-sea" onclick="selectWorld('sea')"><div class="world-icon">🌊</div><div class="world-name">Pirate Seas</div><div class="world-desc">Ocean adventures, sea monsters, hidden treasure</div></div>
+          <div class="world-card" id="world-urban" onclick="selectWorld('urban')"><div class="world-icon">🗡</div><div class="world-name">Urban Intrigue</div><div class="world-desc">City shadows, thieves guilds, political power</div></div>
+        </div>
+        <button class="btn btn-primary btn-full" onclick="createCharacter()">Begin Your Legend ✦</button>
+      </div>
+    </div>
+    <div id="char-sheet" class="hidden">
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+          <div>
+            <div style="font-family:'Cinzel',serif;font-size:20px;color:var(--blood);" id="sheet-name">—</div>
+            <div style="font-size:13px;color:var(--ink-light);" id="sheet-subtitle">—</div>
+          </div>
+          <button class="btn btn-secondary btn-sm" onclick="newCharacter()">New Hero</button>
+        </div>
+        <div style="margin-bottom:12px;">
+          <div style="font-size:11px;color:var(--ink-dim);margin-bottom:3px;">❤ HP: <span id="sheet-hp">—</span></div>
+          <div class="hp-bar"><div class="hp-fill" id="sheet-hp-bar" style="width:100%"></div></div>
+        </div>
+        <div class="grid3" id="sheet-stats"></div>
+        <div class="divider">Details</div>
+        <div class="info-row"><span class="info-key">Level</span><span class="info-val" id="sheet-level">1</span></div>
+        <div class="info-row"><span class="info-key">Experience</span><span class="info-val" id="sheet-xp">0 / 300</span></div>
+        <div class="info-row"><span class="info-key">Gold</span><span class="info-val" id="sheet-gold">0 gp</span></div>
+        <div class="info-row"><span class="info-key">World</span><span class="info-val" id="sheet-world">—</span></div>
+        <div class="info-row"><span class="info-key">Armor Class</span><span class="info-val" id="sheet-ac">—</span></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Inventory</div>
+        <ul class="inventory-list" id="sheet-inventory"></ul>
+        <div style="margin-top:10px;display:flex;gap:8px;">
+          <input type="text" id="inv-add" placeholder="Add item..." style="flex:1;padding:7px 10px;background:var(--parchment-dark);border:1px solid var(--parchment-darker);border-radius:3px;font-family:'Crimson Text',serif;font-size:14px;color:var(--ink);outline:none;"/>
+          <button class="btn btn-secondary btn-sm" onclick="addItem()">Add</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DICE TAB -->
+  <div class="panel" id="tab-dice">
+    <div class="card">
+      <div class="card-title">The Dice Hall</div>
+      <div class="roll-result" id="roll-result">
+        <div style="color:var(--parchment-darker);font-family:'Cinzel',serif;font-size:14px;">Roll your fate...</div>
+      </div>
+      <div class="dice-grid">
+        <button class="die-btn" onclick="roll(4)"><span>d4</span><span class="die-label">Dagger</span></button>
+        <button class="die-btn" onclick="roll(6)"><span>d6</span><span class="die-label">Shortsword</span></button>
+        <button class="die-btn" onclick="roll(8)"><span>d8</span><span class="die-label">Longsword</span></button>
+        <button class="die-btn" onclick="roll(10)"><span>d10</span><span class="die-label">Halberd</span></button>
+        <button class="die-btn" onclick="roll(12)"><span>d12</span><span class="die-label">Greataxe</span></button>
+        <button class="die-btn" onclick="roll(20)"><span style="font-size:20px;">d20</span><span class="die-label">Check!</span></button>
+        <button class="die-btn" onclick="roll(100)"><span>d100</span><span class="die-label">Fate</span></button>
+        <button class="die-btn" onclick="rollMulti(2,6)" style="border-color:var(--gold)"><span style="font-size:13px;">2d6</span><span class="die-label">Damage</span></button>
+      </div>
+      <div style="font-family:'Cinzel',serif;font-size:11px;color:var(--ink-dim);margin-bottom:6px;letter-spacing:1px;">ROLL HISTORY</div>
+      <div class="roll-history" id="roll-history"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Custom Roll</div>
+      <div class="grid2">
+        <div class="field"><label>Dice Count</label><input type="number" id="custom-count" value="1" min="1" max="20"/></div>
+        <div class="field"><label>Dice Sides</label><input type="number" id="custom-sides" value="6" min="2" max="100"/></div>
+      </div>
+      <div class="field"><label>Modifier</label><input type="number" id="custom-mod" value="0" min="-20" max="20"/></div>
+      <button class="btn btn-gold btn-full" onclick="rollCustom()">🎲 Roll Custom Dice</button>
+    </div>
+  </div>
+
+  <!-- SETUP TAB -->
+  <div class="panel" id="tab-setup">
+    <div class="setup">
+      <div class="setup-title">⚙ Dungeon Master Setup</div>
+      <div class="setup-sub">
+        The AI Dungeon Master requires an Anthropic API key to weave your story.<br/>
+        Get a free key at <strong style="color:var(--gold-light);">console.anthropic.com</strong><br/>
+        Your key is stored locally on this device only — never sent anywhere except Anthropic.
+      </div>
+      <label style="display:block;font-family:'Cinzel',serif;font-size:11px;color:var(--parchment-darker);letter-spacing:2px;margin-bottom:6px;">ANTHROPIC API KEY</label>
+      <input class="key-input" type="password" id="api-key-input" placeholder="sk-ant-..."/>
+      <button class="btn btn-gold btn-full" onclick="saveKey()">Save &amp; Activate</button>
+      <div class="status-msg" id="key-status"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Game Settings</div>
+      <div class="info-row">
+        <span class="info-key">DM Style</span>
+        <select onchange="saveSetting('dm_style',this.value)" id="dm-style" style="border:none;background:transparent;font-family:'Cinzel',serif;font-size:12px;color:var(--ink);cursor:pointer;">
+          <option value="epic">Epic &amp; Descriptive</option>
+          <option value="brutal">Brutal &amp; Unforgiving</option>
+          <option value="humorous">Humorous &amp; Light</option>
+          <option value="horror">Dark &amp; Horrific</option>
+          <option value="classic">Classic D&amp;D</option>
+        </select>
+      </div>
+      <div class="info-row">
+        <span class="info-key">Difficulty</span>
+        <select onchange="saveSetting('difficulty',this.value)" id="difficulty" style="border:none;background:transparent;font-family:'Cinzel',serif;font-size:12px;color:var(--ink);cursor:pointer;">
+          <option value="easy">Novice</option>
+          <option value="normal" selected>Standard</option>
+          <option value="hard">Heroic</option>
+          <option value="deadly">Legendary</option>
+        </select>
+      </div>
+      <div class="info-row">
+        <span class="info-key">Narration Length</span>
+        <select onchange="saveSetting('length',this.value)" id="narr-length" style="border:none;background:transparent;font-family:'Cinzel',serif;font-size:12px;color:var(--ink);cursor:pointer;">
+          <option value="short">Brief</option>
+          <option value="medium" selected>Standard</option>
+          <option value="long">Rich &amp; Detailed</option>
+        </select>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Danger Zone</div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-secondary btn-sm" onclick="clearHistory()" style="flex:1;">Clear Story History</button>
+        <button class="btn btn-secondary btn-sm" onclick="resetAll()" style="flex:1;color:var(--blood);border-color:var(--blood);">Reset Everything</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── STATE ──
+let char = null;
+let history = [];
+let apiKey = '';
+let rollHist = [];
+let selectedWorld = 'classic';
+let settings = { dm_style: 'epic', difficulty: 'normal', length: 'medium' };
+
+const XP_TABLE = [0,300,900,2700,6500,14000,23000,34000,48000,64000,85000,100000,120000,140000,165000,195000,225000,265000,305000,355000];
+
+const WORLDS = {
+  classic: { name: 'Forgotten Realms', setting: 'a classic high fantasy world of dungeons, dragons, and epic quests' },
+  dark:    { name: 'Dark Horror',      setting: 'a gothic horror realm of undead, cursed lands, and ancient evil' },
+  sea:     { name: 'Pirate Seas',      setting: 'a world of ocean adventure, sea monsters, pirate fleets, and sunken treasure' },
+  urban:   { name: 'Urban Intrigue',   setting: 'a gritty city of thieves guilds, political intrigue, and shadow conspiracies' }
+};
+
+// ── INIT ──
+function init() {
+  apiKey = localStorage.getItem('dnd_api_key') || '';
+  if (apiKey) document.getElementById('api-key-input').value = apiKey;
+
+  const saved = localStorage.getItem('dnd_char');
+  if (saved) {
+    char = JSON.parse(saved);
+    updateCharacterDisplay();
+    showAdventureArea();
+  }
+
+  const sh = localStorage.getItem('dnd_history');
+  if (sh) { history = JSON.parse(sh); renderHistory(); }
+
+  const ss = localStorage.getItem('dnd_settings');
+  if (ss) { settings = { ...settings, ...JSON.parse(ss) }; applySettings(); }
+
+  const rh = localStorage.getItem('dnd_rolls');
+  if (rh) rollHist = JSON.parse(rh);
+  renderRollHistory();
+  rollAllStats();
+}
+
+function applySettings() {
+  const map = { 'dm-style': 'dm_style', 'difficulty': 'difficulty', 'narr-length': 'length' };
+  Object.entries(map).forEach(([id, key]) => {
+    const el = document.getElementById(id);
+    if (el && settings[key]) el.value = settings[key];
+  });
+}
+
+function saveSetting(key, val) {
+  settings[key] = val;
+  localStorage.setItem('dnd_settings', JSON.stringify(settings));
+}
+
+// ── TABS ──
+function switchTab(id, btn) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-' + id).classList.add('active');
+  if (btn) btn.classList.add('active');
+  else {
+    const tabs = document.querySelectorAll('.tab');
+    tabs.forEach(t => { if (t.getAttribute('onclick') && t.getAttribute('onclick').includes("'" + id + "'")) t.classList.add('active'); });
+  }
+}
+
+// ── WORLD ──
+function selectWorld(w) {
+  selectedWorld = w;
+  document.querySelectorAll('.world-card').forEach(c => c.classList.remove('selected'));
+  document.getElementById('world-' + w).classList.add('selected');
+}
+
+// ── STATS ──
+function d(n) { return Math.floor(Math.random() * n) + 1; }
+function modStr(v) { const m = Math.floor((v - 10) / 2); return (m >= 0 ? '+' : '') + m; }
+
+function rollStatVal() {
+  const dice = [d(6), d(6), d(6), d(6)].sort((a, b) => a - b);
+  return dice[1] + dice[2] + dice[3];
+}
+
+function rollStat(stat) {
+  const val = rollStatVal();
+  document.getElementById('s-' + stat).textContent = val;
+  document.getElementById('m-' + stat).textContent = modStr(val);
+  if (char) { char.stats[stat] = val; saveChar(); updateCharacterDisplay(); }
+}
+
+function rollAllStats() {
+  ['str', 'dex', 'con', 'int', 'wis', 'cha'].forEach(s => {
+    const val = rollStatVal();
+    document.getElementById('s-' + s).textContent = val;
+    document.getElementById('m-' + s).textContent = modStr(val);
+  });
+}
+
+function standardArray() {
+  const arr = [15, 14, 13, 12, 10, 8];
+  ['str', 'dex', 'con', 'int', 'wis', 'cha'].forEach((s, i) => {
+    document.getElementById('s-' + s).textContent = arr[i];
+    document.getElementById('m-' + s).textContent = modStr(arr[i]);
+  });
+}
+
+function getStats() {
+  const stats = {};
+  ['str', 'dex', 'con', 'int', 'wis', 'cha'].forEach(s => {
+    stats[s] = parseInt(document.getElementById('s-' + s).textContent) || 10;
+  });
+  return stats;
+}
+
+// ── CHARACTER CREATION ──
+function calcHP(cls, con) {
+  const hitDice = { Fighter:10, Barbarian:12, Paladin:10, Ranger:10, Cleric:8, Druid:8, Bard:8, Rogue:8, Wizard:6, Warlock:8 };
+  return (hitDice[cls] || 8) + Math.floor((con - 10) / 2);
+}
+
+function calcAC(dex) {
+  return 10 + Math.floor((dex - 10) / 2);
+}
+
+function getStartItems(cls) {
+  const items = {
+    Fighter:   ['Longsword', 'Shield', 'Chain Mail', "Adventurer's Pack"],
+    Wizard:    ['Arcane Staff', 'Spellbook', 'Robes', 'Component Pouch'],
+    Rogue:     ['Shortsword', 'Dagger x2', 'Leather Armor', "Thieves' Tools"],
+    Cleric:    ['Mace', 'Holy Symbol', 'Scale Mail', 'Shield'],
+    Ranger:    ['Longbow', 'Quiver (20 arrows)', 'Shortsword', 'Leather Armor'],
+    Paladin:   ['Longsword', 'Shield', 'Chain Mail', 'Holy Symbol'],
+    Barbarian: ['Greataxe', 'Handaxe x2', "Explorer's Pack"],
+    Bard:      ['Rapier', 'Lute', 'Leather Armor', "Diplomat's Pack"],
+    Druid:     ['Quarterstaff', 'Leather Armor', 'Herbalism Kit', 'Druidic Focus'],
+    Warlock:   ['Dagger', 'Arcane Focus', 'Leather Armor', "Scholar's Pack"]
+  };
+  return items[cls] || ['Dagger', 'Backpack', 'Rations (5 days)'];
+}
+
+function createCharacter() {
+  const name = document.getElementById('char-name').value.trim();
+  if (!name) { alert('Your hero needs a name!'); return; }
+
+  const race  = document.getElementById('char-race').value;
+  const cls   = document.getElementById('char-class').value;
+  const bg    = document.getElementById('char-bg').value;
+  const stats = getStats();
+  const hp    = calcHP(cls, stats.con);
+
+  char = {
+    name, race, cls, bg, stats,
+    world: selectedWorld,
+    hp, maxHp: hp,
+    level: 1, xp: 0,
+    gold: d(10) * 10,
+    inventory: getStartItems(cls),
+    ac: calcAC(stats.dex)
+  };
+
+  history = [];
+  saveChar();
+  updateCharacterDisplay();
+  showAdventureArea();
+
+  // Switch to adventure tab
+  switchTab('adventure', document.querySelector('.tab'));
+  setTimeout(() => startAdventure(), 300);
+}
+
+function updateCharacterDisplay() {
+  if (!char) return;
+  document.getElementById('sheet-name').textContent = char.name;
+  document.getElementById('sheet-subtitle').textContent = `${char.race} ${char.cls} · ${char.bg}`;
+  document.getElementById('sheet-hp').textContent = `${char.hp} / ${char.maxHp}`;
+  document.getElementById('sheet-hp-bar').style.width = Math.max(0, (char.hp / char.maxHp * 100)) + '%';
+  document.getElementById('sheet-level').textContent = char.level;
+  document.getElementById('sheet-xp').textContent = `${char.xp} / ${XP_TABLE[char.level] || 'MAX'}`;
+  document.getElementById('sheet-gold').textContent = `${char.gold} gp`;
+  document.getElementById('sheet-world').textContent = WORLDS[char.world || 'classic'].name;
+  document.getElementById('sheet-ac').textContent = char.ac;
+
+  document.getElementById('sheet-stats').innerHTML = ['str','dex','con','int','wis','cha'].map(s => `
+    <div class="stat-box">
+      <div class="stat-name">${s.toUpperCase()}</div>
+      <div class="stat-val">${char.stats[s]}</div>
+      <div class="stat-mod">${modStr(char.stats[s])}</div>
+    </div>
+  `).join('');
+
+  renderInventory();
+  document.getElementById('char-create').classList.add('hidden');
+  document.getElementById('char-sheet').classList.remove('hidden');
+}
+
+function renderInventory() {
+  document.getElementById('sheet-inventory').innerHTML =
+    (char.inventory || []).map(item => `<li class="inv-item">${item}</li>`).join('');
+}
+
+function addItem() {
+  const input = document.getElementById('inv-add');
+  const item = input.value.trim();
+  if (!item) return;
+  char.inventory = char.inventory || [];
+  char.inventory.push(item);
+  input.value = '';
+  saveChar();
+  renderInventory();
+}
+
+function newCharacter() {
+  if (!confirm('Abandon your current hero? Their legend will be lost forever.')) return;
+  char = null; history = [];
+  localStorage.removeItem('dnd_char');
+  localStorage.removeItem('dnd_history');
+  document.getElementById('char-create').classList.remove('hidden');
+  document.getElementById('char-sheet').classList.add('hidden');
+  document.getElementById('no-char-msg').classList.remove('hidden');
+  document.getElementById('adventure-area').classList.add('hidden');
+  document.getElementById('scene-box').innerHTML = '';
+  rollAllStats();
+}
+
+function saveChar() {
+  if (char) localStorage.setItem('dnd_char', JSON.stringify(char));
+}
+
+// ── ADVENTURE ──
+function showAdventureArea() {
+  if (!char) return;
+  document.getElementById('no-char-msg').classList.add('hidden');
+  document.getElementById('adventure-area').classList.remove('hidden');
+
+  document.getElementById('adv-hp').textContent = `${char.hp} / ${char.maxHp}`;
+  document.getElementById('adv-hp-bar').style.width = Math.max(0, (char.hp / char.maxHp * 100)) + '%';
+  document.getElementById('adv-level').textContent = char.level;
+  document.getElementById('adv-gold').textContent = char.gold;
+
+  const nextXP = XP_TABLE[char.level] || XP_TABLE[XP_TABLE.length - 1];
+  const prevXP = char.level > 1 ? XP_TABLE[char.level - 1] : 0;
+  const pct = Math.min(100, ((char.xp - prevXP) / (nextXP - prevXP)) * 100);
+  document.getElementById('adv-xp-bar').style.width = pct + '%';
+
+  if (!apiKey) document.getElementById('no-key-adv').classList.remove('hidden');
+  else document.getElementById('no-key-adv').classList.add('hidden');
+}
+
+function renderHistory() {
+  const box = document.getElementById('scene-box');
+  if (!box) return;
+  box.innerHTML = history.map(h => `
+    <div class="dm-msg ${h.role === 'user' ? 'player-msg' : ''}">
+      <div class="dm-speaker">${h.role === 'user' ? (char ? char.name : 'Player') + ' //' : '⚔ DUNGEON MASTER //'}</div>
+      <div class="dm-text">${h.content.replace(/\n/g, '<br/>')}</div>
+    </div>
+  `).join('');
+  box.scrollTop = box.scrollHeight;
+}
+
+async function startAdventure() {
+  const world = WORLDS[char.world || 'classic'];
+  const prompt = `Start my D&D adventure! I am ${char.name}, a Level ${char.level} ${char.race} ${char.cls} with a ${char.bg} background, in ${world.setting}. Set the opening scene vividly — where I am, what I see, what immediate situation or hook I face. End with a clear decision point or action available to me.`;
+  await sendToAI(prompt, true);
+}
+
+function quickAction(text) {
+  document.getElementById('action-input').value = text;
+  sendAction();
+}
+
+function handleKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendAction(); }
+}
+
+async function sendAction() {
+  const input = document.getElementById('action-input');
+  const text = input.value.trim();
+  if (!text) return;
+  input.value = '';
+  history.push({ role: 'user', content: text });
+  renderHistory();
+  await sendToAI(text, false);
+}
+
+async function sendToAI(userMsg, isStart) {
+  if (!apiKey) {
+    document.getElementById('no-key-adv').classList.remove('hidden');
+    return;
+  }
+
+  const btn = document.getElementById('send-btn');
+  if (btn) btn.disabled = true;
+
+  const box = document.getElementById('scene-box');
+  const thinking = document.createElement('div');
+  thinking.className = 'dm-msg';
+  thinking.id = 'thinking-dots';
+  thinking.innerHTML = '<div class="dm-speaker">⚔ DUNGEON MASTER //</div><div class="thinking"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>';
+  box.appendChild(thinking);
+  box.scrollTop = box.scrollHeight;
+
+  const world = WORLDS[char?.world || 'classic'];
+  const styleMaps = {
+    epic:     'vivid, immersive and epic with rich descriptions that paint a mental picture',
+    brutal:   'brutal, unforgiving and gritty — real consequences, no hand-holding',
+    humorous: 'witty and fun with humor, puns, and lighthearted moments woven into the danger',
+    horror:   'dark, unsettling and atmospheric — dread around every corner, gothic horror',
+    classic:  'faithful to classic D&D tone, referencing rules naturally and rewarding clever play'
+  };
+  const diffMaps = {
+    easy:   'Be forgiving with skill checks and let the player succeed often to feel heroic.',
+    normal: 'Follow standard D&D difficulty — challenge them but let skill and luck win.',
+    hard:   'Be challenging — enemies are cunning, traps are deadly, resources matter.',
+    deadly: 'Be ruthless. Near-death is common. Mistakes have permanent consequences.'
+  };
+  const lenMaps = {
+    short:  'Keep responses to 2-3 punchy sentences. Be terse and atmospheric.',
+    medium: 'Write 3-5 sentences per scene. Balance description with forward momentum.',
+    long:   'Write rich, detailed scenes of 6-9 sentences. Immerse the player in the world.'
+  };
+
+  const systemPrompt = `You are a masterful Dungeons & Dragons Dungeon Master running an immersive solo campaign in ${world.name} — ${world.setting}.
+
+Your narration style: ${styleMaps[settings.dm_style] || styleMaps.epic}
+Difficulty: ${diffMaps[settings.difficulty] || diffMaps.normal}
+Scene length: ${lenMaps[settings.length] || lenMaps.medium}
+
+RULES:
+- Always end your response with a clear situation, question, or prompt for the player's next action.
+- Track the player's state. When they earn XP, say "You earn X XP." When they find gold, say "You find X gold pieces." When they take damage, say "You take X damage."
+- For skill checks, announce the DC and ask them to roll (e.g. "Roll a DC 14 Dexterity check!").
+- Never break character. You ARE the Dungeon Master.
+- Acknowledge inventory items and stats when relevant.
+- Build a coherent ongoing story — remember what happened earlier.
+
+PLAYER CHARACTER:
+Name: ${char?.name}
+Level ${char?.level} ${char?.race} ${char?.cls} (${char?.bg} background)
+HP: ${char?.hp}/${char?.maxHp} | AC: ${char?.ac}
+STR ${char?.stats?.str} | DEX ${char?.stats?.dex} | CON ${char?.stats?.con} | INT ${char?.stats?.int} | WIS ${char?.stats?.wis} | CHA ${char?.stats?.cha}
+Gold: ${char?.gold} gp
+Inventory: ${(char?.inventory || []).join(', ')}`;
+
+  // Build message array
+  const messages = [];
+  if (isStart) {
+    messages.push({ role: 'user', content: userMsg });
+  } else {
+    // Send last 14 messages of history for context (skip the one we just added — we reconstruct)
+    const ctx = history.slice(-16, -1); // all but the last user message
+    ctx.forEach(h => messages.push({ role: h.role === 'user' ? 'user' : 'assistant', content: h.content }));
+    messages.push({ role: 'user', content: userMsg });
+  }
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 700,
+        system: systemPrompt,
+        messages
+      })
+    });
+
+    const data = await res.json();
+    document.getElementById('thinking-dots')?.remove();
+
+    if (data.error) {
+      addSystemMsg('Arcane connection failed: ' + data.error.message);
+      if (btn) btn.disabled = false;
+      return;
+    }
+
+    const reply = data.content?.find(b => b.type === 'text')?.text || 'The dungeon master is silent...';
+    history.push({ role: 'assistant', content: reply });
+    localStorage.setItem('dnd_history', JSON.stringify(history));
+    parseGameState(reply);
+    renderHistory();
+
+  } catch (e) {
+    document.getElementById('thinking-dots')?.remove();
+    addSystemMsg('Connection failed. Check your API key in the Setup tab. Error: ' + e.message);
+  }
+
+  if (btn) btn.disabled = false;
+}
+
+function addSystemMsg(text) {
+  const box = document.getElementById('scene-box');
+  const el = document.createElement('div');
+  el.className = 'dm-msg';
+  el.innerHTML = `<div class="dm-speaker">SYSTEM //</div><div class="dm-text" style="color:#c0392b;">${text}</div>`;
+  box.appendChild(el);
+  box.scrollTop = box.scrollHeight;
+}
+
+function parseGameState(text) {
+  if (!char) return;
+
+  // XP gain
+  const xpMatch = text.match(/(?:earn|gain|receive|get)\s+(\d+)\s+(?:xp|experience)/i);
+  if (xpMatch) { char.xp += parseInt(xpMatch[1]); checkLevelUp(); }
+
+  // Gold gain
+  const goldGain = text.match(/(?:find|receive|earn|loot|gain)\s+(\d+)\s+(?:gold|gp|gold pieces)/i);
+  if (goldGain) char.gold += parseInt(goldGain[1]);
+
+  // Gold spend
+  const goldSpend = text.match(/(?:pay|spend|cost)\s+(\d+)\s+(?:gold|gp|gold pieces)/i);
+  if (goldSpend) char.gold = Math.max(0, char.gold - parseInt(goldSpend[1]));
+
+  // Damage taken
+  const dmg = text.match(/(?:take|suffer|receive)\s+(\d+)\s+(?:points? of )?damage/i);
+  if (dmg) char.hp = Math.max(0, char.hp - parseInt(dmg[1]));
+
+  // Healing
+  const heal = text.match(/(?:heal|restore|regain)\s+(\d+)\s+(?:hit\s+)?(?:points?|hp)/i);
+  if (heal) char.hp = Math.min(char.maxHp, char.hp + parseInt(heal[1]));
+
+  saveChar();
+  showAdventureArea();
+}
+
+function checkLevelUp() {
+  if (!char || char.level >= 20) return;
+  const nextXP = XP_TABLE[char.level];
+  if (nextXP && char.xp >= nextXP) {
+    char.level++;
+    const conMod = Math.floor((char.stats.con - 10) / 2);
+    const hpGain = d(8) + conMod;
+    char.maxHp += hpGain;
+    char.hp = Math.min(char.hp + hpGain, char.maxHp);
+    history.push({
+      role: 'assistant',
+      content: `⚡ LEVEL UP! You have reached Level ${char.level}! Your maximum HP increases by ${hpGain} to ${char.maxHp}. Your power and legend grows...`
+    });
+  }
+}
+
+// ── DICE ──
+function roll(n) {
+  const result = d(n);
+  const isHigh = result >= Math.ceil(n * 0.75);
+  const isLow  = result <= Math.ceil(n * 0.25);
+
+  let html = `<div class="roll-num">${result}</div><div class="roll-label">d${n}</div>`;
+  if (n === 20 && result === 20) html = `<div class="roll-num" style="color:#ffaa00;">20</div><div class="roll-label" style="color:#ffaa00;">✦ NATURAL 20 — CRITICAL HIT! ✦</div>`;
+  else if (n === 20 && result === 1) html = `<div class="roll-num" style="color:var(--blood-light);">1</div><div class="roll-label" style="color:var(--blood-light);">☠ CRITICAL FAIL!</div>`;
+  else if (isHigh) html = `<div class="roll-num">${result}</div><div class="roll-label">d${n} — ✦ High Roll!</div>`;
+  else if (isLow)  html = `<div class="roll-num">${result}</div><div class="roll-label">d${n} — ⚠ Low Roll</div>`;
+
+  document.getElementById('roll-result').innerHTML = html;
+  addRollHistory(`d${n}:${result}`, isHigh, isLow);
+}
+
+function rollMulti(count, n) {
+  let total = 0, rolls = [];
+  for (let i = 0; i < count; i++) { const r = d(n); total += r; rolls.push(r); }
+  document.getElementById('roll-result').innerHTML =
+    `<div class="roll-num">${total}</div><div class="roll-label">${count}d${n}: [${rolls.join(', ')}]</div>`;
+  addRollHistory(`${count}d${n}:${total}`, total >= count * (n * .75), total <= count * (n * .25));
+}
+
+function rollCustom() {
+  const count = parseInt(document.getElementById('custom-count').value) || 1;
+  const sides = parseInt(document.getElementById('custom-sides').value) || 6;
+  const mod   = parseInt(document.getElementById('custom-mod').value) || 0;
+  let total = mod, rolls = [];
+  for (let i = 0; i < count; i++) { const r = d(sides); total += r; rolls.push(r); }
+  const modStr2 = mod !== 0 ? (mod >= 0 ? '+' : '') + mod : '';
+  document.getElementById('roll-result').innerHTML =
+    `<div class="roll-num">${total}</div><div class="roll-label">${count}d${sides}${modStr2}: [${rolls.join(', ')}] = ${total}</div>`;
+  addRollHistory(`${count}d${sides}${modStr2}:${total}`, false, false);
+}
+
+function addRollHistory(label, high, low) {
+  rollHist.unshift({ label, high, low });
+  if (rollHist.length > 20) rollHist.pop();
+  localStorage.setItem('dnd_rolls', JSON.stringify(rollHist));
+  renderRollHistory();
+}
+
+function renderRollHistory() {
+  const el = document.getElementById('roll-history');
+  if (!el) return;
+  el.innerHTML = rollHist.slice(0, 12).map(r =>
+    `<span class="roll-chip ${r.high ? 'high' : r.low ? 'low' : ''}">${r.label}</span>`
+  ).join('');
+}
+
+// ── SETUP ──
+function saveKey() {
+  const k = document.getElementById('api-key-input').value.trim();
+  const st = document.getElementById('key-status');
+  if (!k.startsWith('sk-ant-')) {
+    st.innerHTML = '<span class="status-err">✗ Anthropic keys start with sk-ant-</span>';
+    return;
+  }
+  apiKey = k;
+  localStorage.setItem('dnd_api_key', k);
+  st.innerHTML = '<span class="status-ok">✦ Key saved — Dungeon Master is ready!</span>';
+  document.getElementById('no-key-adv').classList.add('hidden');
+}
+
+function clearHistory() {
+  if (!confirm('Clear all story history? Your character is kept.')) return;
+  history = [];
+  localStorage.removeItem('dnd_history');
+  document.getElementById('scene-box').innerHTML = '';
+}
+
+function resetAll() {
+  if (!confirm('Reset EVERYTHING? Your hero, story, and rolls will be lost forever.')) return;
+  ['dnd_char','dnd_history','dnd_rolls','dnd_settings'].forEach(k => localStorage.removeItem(k));
+  char = null; history = []; rollHist = [];
+  document.getElementById('scene-box').innerHTML = '';
+  document.getElementById('char-create').classList.remove('hidden');
+  document.getElementById('char-sheet').classList.add('hidden');
+  document.getElementById('no-char-msg').classList.remove('hidden');
+  document.getElementById('adventure-area').classList.add('hidden');
+  rollAllStats();
+  renderRollHistory();
+}
+
+// ── START ──
+init();
+</script>
+</body>
+</html>
