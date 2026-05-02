@@ -8,7 +8,7 @@
 
 <br/>
 
-[![ENTER THE REALM](https://img.shields.io/badge/⚔️_ENTER_THE_REALM-c9a84c?style=for-the-badge&logoColor=black&labelColor=0a0608)](https://george-mando.github.io/George-Mando/)
+[![ENTER THE REALM](https://img.shields.io/badge/⚔️_ENTER_THE_REALM-c9a84c?style=for-the-badge&logoColor=black&labelColor=0a0608)](https://george-mando.github.io/D-D/)
 
 **▶ Click above to open the Dungeon Master AI Oracle ▶**
 
@@ -62,7 +62,7 @@ No app to download. No login required (beyond a free Groq API key). Just open th
 Visit **[console.groq.com](https://console.groq.com)** → Sign up free → API Keys → Create Key
 
 ### Step 2 — Open the Realm
-[![ENTER THE REALM](https://img.shields.io/badge/⚔️_OPEN_DUNGEON_MASTER_AI-c9a84c?style=for-the-badge&labelColor=0a0608)](https://george-mando.github.io/George-Mando/)
+[![ENTER THE REALM](https://img.shields.io/badge/⚔️_OPEN_DUNGEON_MASTER_AI-c9a84c?style=for-the-badge&labelColor=0a0608)](https://george-mando.github.io/D-D/)
 
 ### Step 3 — Build Your Character
 Go to the **⚔️ CHARACTER** tab → Choose your Race, Class, Background → Roll ability scores
