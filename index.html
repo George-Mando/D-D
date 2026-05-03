@@ -462,6 +462,18 @@ body::after{content:'';position:fixed;inset:0;
 .sfx-indicator.show{opacity:1;}
 @keyframes fi{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
 .fi{animation:fi .5s ease both;}
+
+/* ── API KEY PANEL (Lore page) ── */
+.api-key-panel{background:rgba(8,3,1,.98);border:2px solid rgba(201,168,76,.5);border-radius:4px;padding:16px;margin-bottom:12px;position:relative;}
+.api-key-panel::before,.api-key-panel::after{content:'';position:absolute;width:16px;height:16px;border-color:var(--gold);border-style:solid;}
+.api-key-panel::before{top:-1px;left:-1px;border-width:2px 0 0 2px;}
+.api-key-panel::after{bottom:-1px;right:-1px;border-width:0 2px 2px 0;}
+.api-key-input{width:100%;background:rgba(5,2,1,.95);border:1px solid var(--border-bright);color:var(--gold);font-family:'Share Tech Mono',monospace;font-size:13px;padding:11px 13px;border-radius:3px;outline:none;margin-bottom:8px;letter-spacing:1px;}
+.api-key-input:focus{border-color:var(--gold);box-shadow:0 0 8px rgba(201,168,76,.2);}
+.api-key-input::placeholder{color:var(--parch-faint);font-size:11px;letter-spacing:0;}
+.api-awaken-btn{width:100%;padding:12px;background:rgba(201,168,76,.08);border:2px solid var(--gold);color:var(--gold);font-family:'Cinzel',serif;font-size:11px;letter-spacing:3px;cursor:pointer;border-radius:3px;transition:all .25s;margin-bottom:8px;}
+.api-awaken-btn:active{background:rgba(201,168,76,.2);}
+.api-status-box{padding:10px 12px;background:rgba(5,2,1,.8);border:1px solid var(--border);border-radius:3px;font-family:'Share Tech Mono',monospace;font-size:9px;letter-spacing:1px;line-height:1.7;}
 </style>
 </head>
 <body>
@@ -609,7 +621,7 @@ body::after{content:'';position:fixed;inset:0;
       <div class="panel">
         <div class="pl">🎯 ACTIVE QUESTS <span>YOUR PROGRESS</span></div>
         <div class="quest-item"><div class="quest-name">BUILD YOUR CHARACTER<span class="quest-pct">START</span></div><div class="quest-desc">Choose your race, class, and background</div><div class="quest-bar"><div class="quest-fill" style="width:0%"></div></div></div>
-        <div class="quest-item"><div class="quest-name">AWAKEN THE DM ORACLE<span class="quest-pct">REQ. KEY</span></div><div class="quest-desc">Enter your Groq API key to summon the AI DM</div><div class="quest-bar"><div class="quest-fill" style="width:15%"></div></div></div>
+        <div class="quest-item"><div class="quest-name">AWAKEN THE DM ORACLE<span class="quest-pct">REQ. KEY</span></div><div class="quest-desc">Enter your Groq API key on the LORE page to summon the AI DM</div><div class="quest-bar"><div class="quest-fill" style="width:15%"></div></div></div>
         <div class="quest-item" style="margin-bottom:0"><div class="quest-name">ENTER THE CAMPAIGN<span class="quest-pct">READY</span></div><div class="quest-desc">Choose your world and begin the adventure</div><div class="quest-bar"><div class="quest-fill" style="width:50%"></div></div></div>
       </div>
 
@@ -675,18 +687,8 @@ body::after{content:'';position:fixed;inset:0;
         <!-- CENTER: Oracle Face -->
         <div class="dm-panel-center" style="background:rgba(3,1,1,.97);padding:4px;">
           <div class="oracle-status" id="fst">DORMANT</div>
-          <!-- API KEY BOX — always shown until key entered -->
-          <div id="dm-kbox" style="width:100%;padding:0 6px;margin-bottom:4px;">
-            <div style="font-family:'Cinzel',serif;font-size:7px;letter-spacing:2px;color:var(--gold);margin-bottom:4px;text-align:center;border:1px solid rgba(201,168,76,.3);padding:3px;border-radius:2px;background:rgba(201,168,76,.05);">🔑 GROQ API KEY REQUIRED</div>
-            <div style="font-family:'IM Fell English',serif;font-size:8px;color:var(--parch-faint);margin-bottom:4px;text-align:center;">Free at console.groq.com → API Keys</div>
-            <div style="display:flex;gap:3px;">
-              <input id="kin" type="password" placeholder="gsk_..." style="flex:1;background:rgba(10,4,2,.95);border:1px solid var(--border-bright);color:var(--gold);font-family:'Share Tech Mono',monospace;font-size:10px;padding:5px 7px;border-radius:2px;outline:none;min-width:0;"/>
-              <button onclick="activateKey()" style="padding:5px 10px;background:rgba(201,168,76,.1);border:1px solid var(--gold);color:var(--gold);font-family:'Cinzel',serif;font-size:8px;letter-spacing:1px;cursor:pointer;border-radius:2px;white-space:nowrap;">AWAKEN</button>
-            </div>
-            <div class="ks" id="kst" style="margin-top:3px;text-align:center;"></div>
-          </div>
           <div class="face-wrap">
-            <canvas id="dm-canvas" width="190" height="175"></canvas>
+            <canvas id="dm-canvas" width="190" height="210"></canvas>
           </div>
           <div class="voice-bars" id="vbars">
             <div class="vb" id="v0"></div><div class="vb" id="v1"></div><div class="vb" id="v2"></div>
@@ -707,7 +709,7 @@ body::after{content:'';position:fixed;inset:0;
           </div>
           <div class="oracle-controls">
             <button class="oc-btn" onclick="autoSave()">⚡ AUTO</button>
-            <button class="oc-btn" id="dm-sfx-label-btn" style="flex:2;font-size:6px;" id="dm-sfx-label">DM INTERFACE</button>
+            <button class="oc-btn" style="flex:2;font-size:6px;" onclick="showScreen('lore',document.querySelectorAll('.nav-tab')[6])">🔑 ADD KEY (LORE)</button>
           </div>
         </div>
 
@@ -741,7 +743,7 @@ body::after{content:'';position:fixed;inset:0;
       <!-- CHAT BAR AT BOTTOM -->
       <div class="dm-chat-bar">
         <div id="cmsgs" class="dm-chat-msgs" style="display:flex;flex-direction:column;">
-          <div class="msg ai"><div class="spkr">DUNGEON MASTER //</div>*The torch flickers as a cloaked figure turns from an ancient tome...* Enter your Groq API key in the Hero Vitals panel to awaken the DM Oracle and begin your adventure.</div>
+          <div class="msg ai"><div class="spkr">DUNGEON MASTER //</div>*The torch flickers as a cloaked figure turns from an ancient tome...* Enter your Groq API key on the <strong>LORE</strong> tab to awaken the DM Oracle and begin your adventure.</div>
         </div>
         <div class="suggs">
           <button class="sb" onclick="ask(this)">Start adventure</button>
@@ -958,6 +960,28 @@ body::after{content:'';position:fixed;inset:0;
 
     <!-- ══ LORE ══ -->
     <div class="screen" id="screen-lore">
+
+      <!-- ══ PERMANENT API KEY PANEL — ALWAYS VISIBLE ══ -->
+      <div class="api-key-panel">
+        <div class="pl" style="border-color:rgba(201,168,76,.4);">🔑 GROQ API KEY <span style="color:var(--emerald-bright);opacity:1;" id="lore-key-badge">NOT SET</span></div>
+        <div style="font-family:'IM Fell English',serif;font-style:italic;font-size:11px;color:var(--parch-dim);line-height:1.9;margin-bottom:12px;">
+          The DM Oracle requires a free Groq API key to awaken. Visit <span style="color:var(--gold);font-style:normal;">console.groq.com</span> → API Keys → Create Key. It's free — no credit card needed.
+        </div>
+        <input
+          class="api-key-input"
+          id="kin"
+          type="password"
+          placeholder="Paste your Groq API key here: gsk_..."
+          autocomplete="off"
+          spellcheck="false"
+        />
+        <button class="api-awaken-btn" onclick="activateKey()">⚡ AWAKEN THE ORACLE</button>
+        <div class="ks" id="kst"></div>
+        <div class="api-status-box" id="key-status-display">
+          <span style="color:var(--blood-bright);">◇ ORACLE DORMANT</span> · No key entered · Get yours free at console.groq.com
+        </div>
+      </div>
+
       <div class="panel">
         <div class="pl">📖 THE COMPENDIUM <span>ANCIENT KNOWLEDGE</span></div>
         <div style="font-family:'IM Fell English',serif;font-style:italic;font-size:12px;color:var(--parch-dim);line-height:1.8;">The history of this realm, its creators, and the chronicles of games past.</div>
@@ -1003,10 +1027,9 @@ body::after{content:'';position:fixed;inset:0;
 ═══════════════════════════════════════════════════════════ */
 const AudioCtx = window.AudioContext || window.webkitAudioContext;
 let audioCtx = null;
-let sfxEnabled = false; // starts OFF
+let sfxEnabled = false;
 function getAC() { if(!audioCtx) audioCtx = new AudioCtx(); if(audioCtx.state==='suspended') audioCtx.resume(); return audioCtx; }
 
-// Master toggle
 function toggleSfxMaster() {
   sfxEnabled = !sfxEnabled;
   const tog = document.getElementById('sfx-master-toggle');
@@ -1019,7 +1042,6 @@ function toggleSfxMasterDM() {
   const btn = document.getElementById('sfx-toggle-btn');
   if(sfxEnabled){btn.classList.add('active');btn.textContent='🔊 SFX ON';}
   else{btn.classList.remove('active');btn.textContent='🔊 SFX';stopAllAmbient();}
-  // sync tavern toggle
   const tog = document.getElementById('sfx-master-toggle');
   const st = document.getElementById('sfx-master-status');
   if(tog){if(sfxEnabled){tog.classList.add('on');st.textContent='ON';}else{tog.classList.remove('on');st.textContent='OFF';}}
@@ -1158,7 +1180,6 @@ function autoSFXFromText(text){
   for(const tr of triggers){if(tr.words.some(w=>t.includes(w))&&!ambientNodes[tr.sfx]?.playing){toggleAmbient(tr.sfx);break;}}
 }
 
-/* SFX sounds - simplified UI feedback only */
 function sfx_roll(){try{const ctx=getAC();const g=ctx.createGain();g.gain.setValueAtTime(0.1,ctx.currentTime);g.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+0.15);g.connect(ctx.destination);const o=ctx.createOscillator();o.type='triangle';o.frequency.setValueAtTime(300+Math.random()*400,ctx.currentTime);o.frequency.exponentialRampToValueAtTime(100,ctx.currentTime+0.12);o.connect(g);o.start();o.stop(ctx.currentTime+0.15);}catch(e){}}
 function sfx_click(){try{const ctx=getAC();const g=ctx.createGain();g.gain.setValueAtTime(0.05,ctx.currentTime);g.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+0.06);g.connect(ctx.destination);const o=ctx.createOscillator();o.type='sine';o.frequency.value=440;o.connect(g);o.start();o.stop(ctx.currentTime+0.06);}catch(e){}}
 function sfx_critical(){try{const ctx=getAC();[523,659,784].forEach((f,i)=>setTimeout(()=>{const g=ctx.createGain();g.gain.setValueAtTime(0.12,ctx.currentTime);g.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+0.4);g.connect(ctx.destination);const o=ctx.createOscillator();o.type='sine';o.frequency.value=f;o.connect(g);o.start();o.stop(ctx.currentTime+0.4);},i*80));}catch(e){}}
@@ -1169,7 +1190,7 @@ function sfx_save(){try{const ctx=getAC();[440,554,659].forEach((f,i)=>setTimeou
 function showSfxInd(t){const e=document.getElementById('sfx-indicator');e.textContent='♪ '+t;e.classList.add('show');clearTimeout(e._t);e._t=setTimeout(()=>e.classList.remove('show'),1400);}
 
 /* ═══════════════════════════════════════
-   VOICE SYSTEM — Male / Female / Toggle
+   VOICE SYSTEM
 ═══════════════════════════════════════ */
 let voices=[];
 let voiceGender='male';
@@ -1188,11 +1209,9 @@ function toggleVoice(){
 }
 
 function bestVoice(){
-  // Male voices - prefer UK/deep
   const malePrefer=['Google UK English Male','Microsoft Ryan Online (Natural) - English (United Kingdom)',
     'Microsoft Guy Online (Natural) - English (United States)','Microsoft Eric Online (Natural) - English (United States)',
     'Daniel','Alex','Fred','Arthur'];
-  // Female voices  
   const femalePrefer=['Google UK English Female','Microsoft Sonia Online (Natural) - English (United Kingdom)',
     'Microsoft Aria Online (Natural) - English (United States)','Microsoft Jenny Online (Natural) - English (United States)',
     'Samantha','Karen','Moira','Fiona','Victoria'];
@@ -1215,11 +1234,7 @@ function speak(txt){
   if(!window.speechSynthesis||!voiceEnabled)return;
   window.speechSynthesis.cancel();
   const clean=txt.replace(/[*_`#\[\]]/g,'').trim();
-  // Add dramatic natural pauses
-  const dramatic=clean
-    .replace(/\.\.\./g,' ... ')
-    .replace(/([.!?])\s+/g,'$1  ')
-    .replace(/,\s/g,', ');
+  const dramatic=clean.replace(/\.\.\./g,' ... ').replace(/([.!?])\s+/g,'$1  ').replace(/,\s/g,', ');
   const u=new SpeechSynthesisUtterance(dramatic);
   const v=bestVoice();if(v)u.voice=v;
   if(voiceGender==='male'){u.pitch=0.75;u.rate=0.78;u.volume=1.0;}
@@ -1238,24 +1253,58 @@ function showScreen(id,tab){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
   document.getElementById('screen-'+id).classList.add('active');
-  tab.classList.add('active');
+  if(tab)tab.classList.add('active');
   if(id==='dm'){
     if(!faceBuilt){buildFace();faceBuilt=true;}
     renderDMPanels();
-    // Show/hide API key box based on whether key exists
-    const kbox=document.getElementById('dm-kbox');
-    if(kbox){
-      if(apiKey){kbox.style.display='none';}
-      else{kbox.style.display='block';kbox.style.opacity='1';}
-    }
   }
   if(id==='inventory')renderInventory();
   if(id==='character')loadSavedCharacter();
   if(id==='saves'){renderSaves();updateAutosaveInfo();}
+  if(id==='lore')updateKeyStatusDisplay();
 }
 
 /* ═══════════════════════════════════════
-   RENDER DM PANELS (vitals, equipped, inventory)
+   API KEY FUNCTIONS — LORE PAGE
+═══════════════════════════════════════ */
+function activateKey(){
+  const k=document.getElementById('kin').value.trim();
+  const st=document.getElementById('kst');
+  if(!k.startsWith('gsk_')){
+    st.textContent='✗ Keys must start with gsk_ — check your Groq Console';
+    st.className='ks er';
+    return;
+  }
+  apiKey=k;
+  localStorage.setItem('xai_gk',k);
+  st.textContent='✓ Oracle awakened! Head to the DM Oracle tab to begin your adventure.';
+  st.className='ks ok';
+  document.getElementById('fst').textContent='ORACLE AWAKE';
+  updateKeyStatusDisplay();
+  setTimeout(()=>greetDM(),700);
+}
+
+function updateKeyStatusDisplay(){
+  const el=document.getElementById('key-status-display');
+  const badge=document.getElementById('lore-key-badge');
+  const kinEl=document.getElementById('kin');
+  if(!el)return;
+  if(apiKey){
+    const masked=apiKey.substring(0,8)+'••••••••••••••••••••••••';
+    el.innerHTML='<span style="color:var(--emerald-bright);">◆ ORACLE ACTIVE</span> · Key loaded: <span style="color:var(--parch-faint);font-size:9px;">'+masked+'</span><br/><span style="color:var(--parch-faint);font-size:8px;letter-spacing:1px;">Paste a new key above and click AWAKEN to update it.</span>';
+    el.style.borderColor='rgba(45,179,96,.4)';
+    if(badge){badge.textContent='ACTIVE ◆';badge.style.color='var(--emerald-bright)';}
+    if(kinEl)kinEl.placeholder='Key loaded — paste a new key here to update';
+  } else {
+    el.innerHTML='<span style="color:var(--blood-bright);">◇ ORACLE DORMANT</span> · No API key set · Visit <strong style="color:var(--gold);">console.groq.com</strong> → API Keys → Create Key (free, no credit card)';
+    el.style.borderColor='rgba(139,26,26,.4)';
+    if(badge){badge.textContent='NOT SET';badge.style.color='var(--blood-bright)';}
+    if(kinEl)kinEl.placeholder='Paste your Groq API key here: gsk_...';
+  }
+}
+
+/* ═══════════════════════════════════════
+   RENDER DM PANELS
 ═══════════════════════════════════════ */
 function renderDMPanels(){
   renderDMVitals();
@@ -1281,11 +1330,8 @@ function renderDMVitals(){
 
 function renderDMEquipped(){
   const slots=[
-    {key:'mainhand',id:'dm-eq-mh-name',icon:'⚔️'},
-    {key:'offhand',id:'dm-eq-oh-name',icon:'🛡️'},
-    {key:'armor',id:'dm-eq-ar-name',icon:'🧥'},
-    {key:'head',id:'dm-eq-hd-name',icon:'⛑️'},
-    {key:'accessory',id:'dm-eq-ac-name',icon:'💍'},
+    {key:'mainhand',id:'dm-eq-mh-name'},{key:'offhand',id:'dm-eq-oh-name'},
+    {key:'armor',id:'dm-eq-ar-name'},{key:'head',id:'dm-eq-hd-name'},{key:'accessory',id:'dm-eq-ac-name'},
   ];
   slots.forEach(s=>{
     const el=document.getElementById(s.id);if(!el)return;
@@ -1317,7 +1363,7 @@ function renderDMInventory(){
   }).join('');
 }
 
-/* ── DM DICE (inline, no overlay) ── */
+/* ── DM DICE (inline) ── */
 function dmRollDie(sides){
   sfx_roll();
   const result=Math.floor(Math.random()*sides)+1;
@@ -1332,7 +1378,6 @@ function dmRollDie(sides){
   el.innerHTML=`<div class="dm-dice-num" style="color:${color};">${result}</div>
     <div class="dm-dice-sub">d${sides}</div>
     <div class="dm-dice-flavor">${flavor}</div>`;
-  // Also update tavern dice result
   const tr=document.getElementById('die-result');
   if(tr)tr.innerHTML=`<div>${result}</div><div class="die-sub">d${sides} — ${flavor}</div>`;
 }
@@ -1552,17 +1597,12 @@ function loadCharacterToDM(){
   const maxHp=cdata.hp+3;
   vitals={hp:maxHp,maxHp,stamina:cdata.stamina,maxStamina:cdata.stamina,mana:cdata.mana,maxMana:cdata.mana,status:100,maxStatus:100};
   saveVitals();
-  localStorage.setItem('dm_char_name',name);
-  localStorage.setItem('dm_char_class',cls);
-  localStorage.setItem('dm_char_race',race);
-  localStorage.setItem('dm_char_bg',bg);
-  localStorage.setItem('dm_char_align',align);
-  localStorage.setItem('dm_char_trait',trait);
+  localStorage.setItem('dm_char_name',name);localStorage.setItem('dm_char_class',cls);
+  localStorage.setItem('dm_char_race',race);localStorage.setItem('dm_char_bg',bg);
+  localStorage.setItem('dm_char_align',align);localStorage.setItem('dm_char_trait',trait);
   localStorage.setItem('dm_character',`${name} — ${race} ${cls}, ${bg} background, ${align}${trait?'. '+trait:''}`);
   renderVitals();sfx_levelup();autoSave();
-  // Switch to DM screen
   goDM();
-  // Pre-fill intro message
   setTimeout(()=>{
     const campaign=localStorage.getItem('dm_campaign')||'';
     document.getElementById('cin').value=`I am ${name}, a ${race} ${cls} with a ${bg} background. My alignment is ${align}.${trait?' My backstory: '+trait:''} ${campaign?'I am beginning the campaign: '+campaign+'.':''} Please introduce me to my adventure and describe where I am starting.`;
@@ -1660,7 +1700,7 @@ function buildFace(){
 }
 
 /* ═══════════════════════════════════════
-   DM ORACLE AI CHAT — Enhanced storytelling
+   DM ORACLE AI CHAT
 ═══════════════════════════════════════ */
 const GROQ_URL='https://api.groq.com/openai/v1/chat/completions';
 const GROQ_MDL='llama-3.3-70b-versatile';
@@ -1704,20 +1744,6 @@ let apiKey=localStorage.getItem('xai_gk')||'';
 let dmHist=[];
 if(apiKey){document.getElementById('fst').textContent='ORACLE AWAKE';}
 
-function activateKey(){
-  const k=document.getElementById('kin').value.trim();const st=document.getElementById('kst');
-  if(!k.startsWith('gsk_')){st.textContent='✗ Keys start with gsk_';st.className='ks er';return;}
-  apiKey=k;localStorage.setItem('xai_gk',k);st.textContent='✓ Oracle awakens...';st.className='ks ok';
-  document.getElementById('fst').textContent='ORACLE AWAKE';
-  // Shrink and hide key box
-  const kbox=document.getElementById('dm-kbox');
-  if(kbox){kbox.style.opacity='0';setTimeout(()=>{kbox.style.display='none';},600);}
-  // Resize canvas back to full
-  const canvas=document.getElementById('dm-canvas');
-  if(canvas)canvas.height=210;
-  setTimeout(()=>greetDM(),700);
-}
-
 function greetDM(){
   const campaign=localStorage.getItem('dm_campaign')||'';const character=localStorage.getItem('dm_character')||'';
   let intro;
@@ -1745,10 +1771,8 @@ async function send(){
   const inp=document.getElementById('cin'),btn=document.getElementById('sbtn');
   const txt=inp.value.trim();if(!txt)return;
   if(!apiKey){
-    // Check if key is in dm-kbox input
-    const kinEl=document.getElementById('kin');
-    if(kinEl&&kinEl.value.trim().startsWith('gsk_')){activateKey();return;}
-    addMsg('ai','*The Oracle remains silent...* Please enter your Groq API key in the panel above to begin.');return;
+    addMsg('ai','*The Oracle remains silent...* Please go to the <strong>LORE</strong> tab and enter your Groq API key to awaken the Oracle.');
+    return;
   }
   addMsg('usr',txt);inp.value='';btn.disabled=true;
   const campaign=localStorage.getItem('dm_campaign')||'';const character=localStorage.getItem('dm_character')||'';
@@ -1764,25 +1788,22 @@ async function send(){
       const r=d.choices[0].message.content;dmHist.push({role:'assistant',content:r});
       addMsg('ai',r);speak(r);autoSFXFromText(r);autoSave();
     }
-  }catch(e){th.remove();addMsg('ai','*The scrying pool goes dark...* Connection failed. Check your API key and try again.');dmHist.pop();}
+  }catch(e){th.remove();addMsg('ai','*The scrying pool goes dark...* Connection failed. Check your API key on the LORE tab and try again.');dmHist.pop();}
   btn.disabled=false;
 }
 function ask(btn){document.getElementById('cin').value=btn.textContent;send();}
-
-/* ═══════════════════════════════════════
-   VOICE BARS ANIMATION
-═══════════════════════════════════════ */
 
 /* ═══════════════════════════════════════
    INIT
 ═══════════════════════════════════════ */
 window.addEventListener('load',()=>{
   renderVitals();renderInventory();loadSavedCharacter();updateTavernSaveCount();updateAutosaveInfo();
-  // Hide key box if key already stored
-  const kbox=document.getElementById('dm-kbox');
-  if(kbox && apiKey){kbox.style.display='none';}
-  // Update oracle status
-  if(apiKey)document.getElementById('fst').textContent='ORACLE AWAKE';
+  updateKeyStatusDisplay();
+  if(apiKey){
+    document.getElementById('fst').textContent='ORACLE AWAKE';
+    const kinEl=document.getElementById('kin');
+    if(kinEl)kinEl.placeholder='Key loaded — paste a new key here to update';
+  }
   if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
 });
 </script>
