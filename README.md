@@ -149,7 +149,7 @@ public:
 
 <div align="center">
 
-[![PLAY THE ORACLE](https://img.shields.io/badge/⚔️_PLAY_DUNGEON_MASTER_AI-c9a84c?style=for-the-badge&labelColor=0a0608)](https://george-mando.github.io/George-Mando/)
+[![PLAY THE ORACLE](https://img.shields.io/badge/⚔️_PLAY_DUNGEON_MASTER_AI-c9a84c?style=for-the-badge&labelColor=0a0608)](https://george-mando.github.io/D-D/)
 &nbsp;
 [![itch.io](https://img.shields.io/badge/🎮_See_My_Games-FA5C5C?style=for-the-badge&labelColor=0a0608)](https://george-carter.itch.io/)
 &nbsp;
