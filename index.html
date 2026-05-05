@@ -1076,9 +1076,6 @@ let partyCode=null,partyRole=null,partyMembers=[],myPartyName='',partyPollInterv
 
 function generateCode(){const c='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';let code='';for(let i=0;i<6;i++)code+=c[Math.floor(Math.random()*c.length)];return code;}
 
-// kvdb.io — free public key-value store, works cross-device with just fetch
-const FB_URL='https://kvdb.io/9ARBxNKJhHKM1Df4Hf3hSV';
-
 async function fbSet(key,data){
   try{const r=await fetch(`${FB_URL}/${encodeURIComponent(key)}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});return r.ok;}
   catch(e){return false;}
