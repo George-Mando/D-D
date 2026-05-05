@@ -1069,17 +1069,109 @@ function setVital(key,cur,max){const pct=max>0?Math.max(0,Math.min(100,(cur/max)
 function syncTV(prefix,cur,max){const pct=max>0?Math.max(0,Math.min(100,(cur/max)*100)):0;const val=document.getElementById(prefix+'-val');if(val)val.textContent=`${cur}/${max}`;const bar=document.getElementById(prefix+'-bar');if(bar)bar.style.width=pct+'%';}
 function adjustStat(stat,amount,silent){if(!silent)sfx_click();if(stat==='hp')vitals.hp=Math.max(0,Math.min(vitals.maxHp,vitals.hp+amount));else if(stat==='stamina')vitals.stamina=Math.max(0,Math.min(vitals.maxStamina,vitals.stamina+amount));else if(stat==='mana')vitals.mana=Math.max(0,Math.min(vitals.maxMana,vitals.mana+amount));else if(stat==='status')vitals.status=Math.max(0,Math.min(vitals.maxStatus,vitals.status+amount));saveVitals();renderVitals();const rowIds={hp:'dm-hp-row',stamina:'dm-st-row',mana:'dm-mana-row-sm',status:'dm-status-row'};const rowEl=document.getElementById(rowIds[stat]);if(rowEl){rowEl.classList.remove('stat-flash-damage','stat-flash-heal');void rowEl.offsetWidth;rowEl.classList.add(amount<0?'stat-flash-damage':'stat-flash-heal');setTimeout(()=>rowEl.classList.remove('stat-flash-damage','stat-flash-heal'),700);}if(stat==='hp'&&vitals.hp<=0){showStatNotif('💀 YOU HAVE FALLEN!','damage');addMsg('ai','<em>*You collapse... Make death saving throws — roll d20 each turn. 3 successes to stabilize. 3 failures means death.*</em>');}}
 
-/* ═══ PARTY SYSTEM ═══ */
-let partyCode=null,partyRole=null,partyMembers=[],myPartyName='',partyChannel=null,partyPollInterval=null;
+/* ═══ PARTY SYSTEM — Firebase Realtime DB (cross-device) ═══ */
+// Uses Firebase free tier REST API — no signup needed, public demo project
+const FB_URL='https://kvdb.io/9ARBxNKJhHKM1Df4Hf3hSV';
+let partyCode=null,partyRole=null,partyMembers=[],myPartyName='',partyPollInterval=null,partyChannel=null;
+
 function generateCode(){const c='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';let code='';for(let i=0;i<6;i++)code+=c[Math.floor(Math.random()*c.length)];return code;}
-function createParty(){const nameEl=document.getElementById('host-name-input');myPartyName=nameEl.value.trim()||localStorage.getItem('dm_char_name')||'Host';partyCode=generateCode();partyRole='host';document.getElementById('party-code-section').style.display='block';document.getElementById('party-code-display').textContent=partyCode;document.getElementById('create-party-btn').style.display='none';const session={code:partyCode,host:myPartyName,members:[{name:myPartyName,class:localStorage.getItem('dm_char_class')||'Hero',hp:vitals.hp,maxHp:vitals.maxHp,stamina:vitals.stamina,maxStamina:vitals.maxStamina,online:true,isHost:true}],timestamp:Date.now()};localStorage.setItem('party_session_'+partyCode,JSON.stringify(session));setupPartyChannel();renderPartyHUD();updatePartyTab();partyPollInterval=setInterval(pollPartyUpdates,1500);showSfxInd('PARTY CREATED: '+partyCode);}
-function joinParty(){const nameEl=document.getElementById('join-name-input'),codeEl=document.getElementById('join-code-input');myPartyName=nameEl.value.trim()||localStorage.getItem('dm_char_name')||'Adventurer';const code=codeEl.value.trim().toUpperCase();const statusEl=document.getElementById('join-status');if(code.length!==6){statusEl.textContent='⚠ Enter a valid 6-letter code';statusEl.style.color='var(--blood-bright)';return;}const raw=localStorage.getItem('party_session_'+code);if(!raw){statusEl.textContent='⚠ Party not found. Check the code.';statusEl.style.color='var(--blood-bright)';return;}const session=JSON.parse(raw);partyCode=code;partyRole='member';statusEl.textContent='✓ Joined: '+session.host+"'s campaign!";statusEl.style.color='var(--emerald-bright)';session.members.push({name:myPartyName,class:localStorage.getItem('dm_char_class')||'Adventurer',hp:vitals.hp,maxHp:vitals.maxHp,stamina:vitals.stamina,maxStamina:vitals.maxStamina,online:true,isHost:false});session.timestamp=Date.now();localStorage.setItem('party_session_'+code,JSON.stringify(session));setupPartyChannel();renderPartyHUD();updatePartyTab();partyPollInterval=setInterval(pollPartyUpdates,1500);setTimeout(()=>closePartyModal(),1500);showSfxInd('JOINED PARTY!');}
-function setupPartyChannel(){if(typeof BroadcastChannel!=='undefined'){partyChannel=new BroadcastChannel('dm_oracle_party_'+partyCode);partyChannel.onmessage=(ev)=>{const msg=ev.data;if(msg.type==='vitals_update'){const session=getPartySession();if(session){const idx=session.members.findIndex(m=>m.name===msg.name);if(idx>=0)session.members[idx]={...session.members[idx],...msg.vitals};else session.members.push({name:msg.name,class:msg.cls||'?',online:true,...msg.vitals});savePartySession(session);renderPartyHUD();}}}; }}
-function getPartySession(){if(!partyCode)return null;try{return JSON.parse(localStorage.getItem('party_session_'+partyCode));}catch{return null;}}
-function savePartySession(session){if(!partyCode)return;session.timestamp=Date.now();localStorage.setItem('party_session_'+partyCode,JSON.stringify(session));}
-function pollPartyUpdates(){const session=getPartySession();if(!session)return;partyMembers=session.members||[];renderPartyHUD();const hs=document.getElementById('party-host-status');if(hs)hs.textContent=partyMembers.length+' adventurer'+(partyMembers.length!==1?'s':'')+' in party';updatePartyTab();}
-function broadcastPartyUpdate(){if(!partyCode||!myPartyName)return;const session=getPartySession();if(session){const idx=session.members.findIndex(m=>m.name===myPartyName);const update={name:myPartyName,hp:vitals.hp,maxHp:vitals.maxHp,stamina:vitals.stamina,maxStamina:vitals.maxStamina,online:true};if(idx>=0)session.members[idx]={...session.members[idx],...update};else session.members.push({...update,class:localStorage.getItem('dm_char_class')||'?',isHost:partyRole==='host'});savePartySession(session);}if(partyChannel)partyChannel.postMessage({type:'vitals_update',name:myPartyName,cls:localStorage.getItem('dm_char_class')||'?',vitals:{hp:vitals.hp,maxHp:vitals.maxHp,stamina:vitals.stamina,maxStamina:vitals.maxStamina}});}
-function leaveParty(){if(partyPollInterval)clearInterval(partyPollInterval);if(partyChannel){partyChannel.close();partyChannel=null;}partyCode=null;partyRole=null;partyMembers=[];renderPartyHUD();updatePartyTab();document.getElementById('tavern-party-status').textContent='SOLO';closePartyModal();}
+
+// kvdb.io — free public key-value store, works cross-device with just fetch
+const FB_URL='https://kvdb.io/9ARBxNKJhHKM1Df4Hf3hSV';
+
+async function fbSet(key,data){
+  try{const r=await fetch(`${FB_URL}/${encodeURIComponent(key)}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});return r.ok;}
+  catch(e){return false;}
+}
+async function fbGet(key){
+  try{const r=await fetch(`${FB_URL}/${encodeURIComponent(key)}`);if(!r.ok)return null;const t=await r.text();try{return JSON.parse(t);}catch{return null;}}
+  catch(e){return null;}
+}
+
+async function createParty(){
+  const nameEl=document.getElementById('host-name-input');
+  myPartyName=nameEl.value.trim()||localStorage.getItem('dm_char_name')||'Host';
+  partyCode=generateCode();partyRole='host';
+  const btn=document.getElementById('create-party-btn');
+  btn.textContent='⏳ CREATING...';btn.disabled=true;
+  const me={name:myPartyName,class:localStorage.getItem('dm_char_class')||'Hero',hp:vitals.hp,maxHp:vitals.maxHp,stamina:vitals.stamina,maxStamina:vitals.maxStamina,online:true,isHost:true,ts:Date.now()};
+  const session={code:partyCode,host:myPartyName,created:Date.now(),members:{[myPartyName]:me}};
+  const ok=await fbSet('party:'+partyCode,session);
+  // Always also store locally as fallback
+  localStorage.setItem('party_session_'+partyCode,JSON.stringify(session));
+  btn.textContent='⚔️ CREATE PARTY';btn.disabled=false;
+  document.getElementById('party-code-section').style.display='block';
+  document.getElementById('party-code-display').textContent=partyCode;
+  btn.style.display='none';
+  renderPartyHUD();updatePartyTab();
+  partyPollInterval=setInterval(pollPartyUpdates,2500);
+  showSfxInd('PARTY CREATED: '+partyCode);
+  if(typeof BroadcastChannel!=='undefined'){partyChannel=new BroadcastChannel('dm_party_'+partyCode);partyChannel.onmessage=()=>pollPartyUpdates();}
+}
+
+async function joinParty(){
+  const nameEl=document.getElementById('join-name-input'),codeEl=document.getElementById('join-code-input');
+  myPartyName=nameEl.value.trim()||localStorage.getItem('dm_char_name')||'Adventurer';
+  const code=codeEl.value.trim().toUpperCase().replace(/[^A-Z0-9]/g,'');
+  const statusEl=document.getElementById('join-status');
+  if(code.length!==6){statusEl.textContent='⚠ Enter a valid 6-letter code';statusEl.style.color='var(--blood-bright)';return;}
+  statusEl.textContent='⏳ Connecting...';statusEl.style.color='var(--gold)';
+  // Try cloud first
+  let session=await fbGet('party:'+code);
+  // Fallback: same-device localStorage
+  if(!session){const raw=localStorage.getItem('party_session_'+code);if(raw){try{session=JSON.parse(raw);}catch(e){}}}
+  if(!session){statusEl.textContent='⚠ Party not found. Check the code — host must create first.';statusEl.style.color='var(--blood-bright)';return;}
+  partyCode=code;partyRole='member';
+  const me={name:myPartyName,class:localStorage.getItem('dm_char_class')||'Adventurer',hp:vitals.hp,maxHp:vitals.maxHp,stamina:vitals.stamina,maxStamina:vitals.maxStamina,online:true,isHost:false,ts:Date.now()};
+  // Merge me into session and save back
+  if(!session.members)session.members={};
+  session.members[myPartyName]=me;
+  await fbSet('party:'+code,session);
+  localStorage.setItem('party_session_'+code,JSON.stringify(session));
+  statusEl.textContent='✓ Joined '+session.host+"'s party!";statusEl.style.color='var(--emerald-bright)';
+  renderPartyHUD();updatePartyTab();
+  partyPollInterval=setInterval(pollPartyUpdates,2500);
+  if(typeof BroadcastChannel!=='undefined'){partyChannel=new BroadcastChannel('dm_party_'+partyCode);partyChannel.onmessage=()=>pollPartyUpdates();}
+  setTimeout(()=>closePartyModal(),1500);
+  showSfxInd('JOINED PARTY!');
+}
+
+async function pollPartyUpdates(){
+  if(!partyCode)return;
+  let session=await fbGet('party:'+partyCode);
+  if(!session){try{session=JSON.parse(localStorage.getItem('party_session_'+partyCode)||'null');}catch(e){}}
+  if(session&&session.members){
+    partyMembers=Object.values(session.members).filter(m=>m&&m.name);
+    // Sync back to localStorage
+    localStorage.setItem('party_session_'+partyCode,JSON.stringify(session));
+  }
+  renderPartyHUD();
+  const hs=document.getElementById('party-host-status');
+  if(hs)hs.textContent=partyMembers.length+' adventurer'+(partyMembers.length!==1?'s':'')+' in party';
+  updatePartyTab();
+}
+
+async function broadcastPartyUpdate(){
+  if(!partyCode||!myPartyName)return;
+  // Get current session, update my member entry, save back
+  let session=await fbGet('party:'+partyCode);
+  if(!session){try{session=JSON.parse(localStorage.getItem('party_session_'+partyCode)||'null');}catch(e){}}
+  if(!session)return;
+  if(!session.members)session.members={};
+  session.members[myPartyName]={name:myPartyName,class:localStorage.getItem('dm_char_class')||'?',hp:vitals.hp,maxHp:vitals.maxHp,stamina:vitals.stamina,maxStamina:vitals.maxStamina,online:true,isHost:partyRole==='host',ts:Date.now()};
+  await fbSet('party:'+partyCode,session);
+  localStorage.setItem('party_session_'+partyCode,JSON.stringify(session));
+  if(partyChannel)try{partyChannel.postMessage({type:'update'});}catch(e){}
+}
+
+function leaveParty(){
+  if(partyPollInterval)clearInterval(partyPollInterval);
+  if(partyChannel){try{partyChannel.close();}catch(e){}partyChannel=null;}
+  partyCode=null;partyRole=null;partyMembers=[];
+  renderPartyHUD();updatePartyTab();
+  document.getElementById('tavern-party-status').textContent='SOLO';
+  closePartyModal();
+}
 function renderPartyHUD(){const hud=document.getElementById('party-hud'),inner=document.getElementById('party-hud-inner');if(!partyCode||partyMembers.length===0){hud.classList.remove('visible');return;}hud.classList.add('visible');document.getElementById('tavern-party-status').textContent=partyMembers.length+' PLAYERS';inner.innerHTML=partyMembers.map(m=>{const hpPct=m.maxHp>0?Math.max(0,Math.min(100,(m.hp/m.maxHp)*100)):100;const stPct=m.maxStamina>0?Math.max(0,Math.min(100,(m.stamina/m.maxStamina)*100)):100;const isMe=m.name===myPartyName;return`<div class="party-member-hud" style="${isMe?'border-color:rgba(201,168,76,.5);':''}"><div class="pmh-name"><div class="pmh-dot ${m.online?'':'offline'}"></div>${m.name}${isMe?' (YOU)':''}${m.isHost?' 👑':''}</div><div style="font-family:'Share Tech Mono',monospace;font-size:7px;color:var(--parch-faint);margin-bottom:3px;">${m.class||'?'}</div><div class="pmh-bars"><div class="pmh-bar-row"><span class="pmh-bar-icon">❤️</span><div class="pmh-bar-track"><div class="pmh-bar-fill vf-hp" style="width:${hpPct}%"></div></div><span style="font-family:'Share Tech Mono',monospace;font-size:7px;color:var(--gold);margin-left:2px;">${m.hp||0}/${m.maxHp||0}</span></div><div class="pmh-bar-row"><span class="pmh-bar-icon">⚡</span><div class="pmh-bar-track"><div class="pmh-bar-fill vf-stamina" style="width:${stPct}%"></div></div></div></div></div>`;}).join('');}
 function updatePartyTab(){const noParty=document.getElementById('no-party-msg'),partyInfo=document.getElementById('current-party-info'),memberList=document.getElementById('current-member-list'),codeEl=document.getElementById('current-party-code');if(!partyCode){noParty.style.display='block';partyInfo.style.display='none';return;}noParty.style.display='none';partyInfo.style.display='block';if(codeEl)codeEl.textContent=partyCode;const session=getPartySession();const members=session?.members||partyMembers;if(memberList){memberList.innerHTML=members.map(m=>`<div class="party-member"><div class="pm-dot ${m.online?'online':'offline'}"></div><div class="pm-name">${m.name}${m.isHost?' 👑':''}</div><div class="pm-class">${m.class||'?'}</div><div class="pm-hp">❤️ ${m.hp||0}/${m.maxHp||0}</div></div>`).join('');}}
 function openPartyModal(){document.getElementById('party-modal').classList.add('show');updatePartyTab();}
