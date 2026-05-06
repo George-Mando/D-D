@@ -3,9 +3,8 @@
 <!-- ANIMATED WAVE HEADER -->
 <img width="100%" src="https://capsule-render.vercel.app/api?type=waving&color=0:0a0608,50:c9a84c,100:0a0608&height=200&section=header&text=DUNGEON%20MASTER%20AI&fontSize=52&fontColor=c9a84c&fontAlignY=38&desc=XenClipse%20Studios%20%7C%20George%20Carter%20%7C%20D%26D%205e%20AI%20Oracle&descAlignY=58&descSize=16&animation=fadeIn" />
 
-<!-- ANIMATED TYPING SVG -->
-![Dungeon Master AI](https://capsule-render.vercel.app/api?type=waving&color=0:0a0608,50:c9a84c,100:0a0608&height=200&section=header&text=DUNGEON%20MASTER%20AI&fontSize=52&fontColor=c9a84c&fontAlignY=38&desc=XenClipse%20Studios%20%7C%20George%20Carter%20%7C%20D%26D%205e%20AI%20Oracle&descAlignY=58&descSize=16&animation=fadeIn)
-
+<!-- ANIMATED WAVE HEADER -->
+<img src="dungeon-master-ai-header.png" alt="Dungeon Master AI" style="width:100%;max-width:1200px;">
 <br/>
 
 [![ENTER THE REALM](https://img.shields.io/badge/⚔️_ENTER_THE_REALM-c9a84c?style=for-the-badge&logoColor=black&labelColor=0a0608)](https://george-mando.github.io/D-D/)
