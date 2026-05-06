@@ -8,7 +8,6 @@
 <meta name="theme-color" content="#0a0608"/>
 <title>⚔️ DUNGEON MASTER AI · XenClipse Studios</title>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Cinzel+Decorative:wght@400;700&family=IM+Fell+English:ital@0;1&family=Share+Tech+Mono&display=swap" rel="stylesheet"/>
-<!-- MQTT.js via CDN for WebSocket party system -->
 <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
 <style>
 :root {
@@ -219,8 +218,6 @@ body::after{content:'';position:fixed;inset:0;background:radial-gradient(ellipse
 .sc-btn{flex:1;padding:11px;border:1px solid var(--gold);color:var(--gold);background:transparent;font-family:'Cinzel',serif;font-size:10px;letter-spacing:2px;cursor:pointer;border-radius:3px;transition:all .2s;}
 .sc-btn:active{background:rgba(201,168,76,.15);}
 .sc-btn.cancel{border-color:var(--blood-bright);color:var(--blood-bright);}
-
-/* ═══ PARTY MODAL ═══ */
 #party-modal{position:fixed;inset:0;background:rgba(0,0,0,.95);z-index:12000;display:none;flex-direction:column;align-items:center;justify-content:center;padding:20px;overflow-y:auto;}
 #party-modal.show{display:flex;}
 .party-modal-box{background:var(--stone-panel);border:2px solid var(--border-bright);border-radius:4px;padding:22px;width:100%;max-width:420px;position:relative;}
@@ -392,11 +389,32 @@ body::after{content:'';position:fixed;inset:0;background:radial-gradient(ellipse
 .api-status-box{padding:10px 12px;background:rgba(5,2,1,.8);border:1px solid var(--border);border-radius:3px;font-family:'Share Tech Mono',monospace;font-size:9px;letter-spacing:1px;line-height:1.7;}
 .ks{font-family:'Share Tech Mono',monospace;font-size:9px;margin-top:6px;letter-spacing:1px;}
 .ks.ok{color:var(--emerald-bright);}.ks.er{color:var(--blood-bright);}
+
+/* ═══════════════════════════════════════════════════
+   PATCH v4.4 — Combat Turns, Auto Dice, Wake Lock, Party Sync
+   ═══════════════════════════════════════════════════ */
+#combat-hud{flex-shrink:0;display:none;padding:6px 10px;background:rgba(50,10,0,.95);border-top:2px solid rgba(200,60,0,.6);overflow-x:auto;align-items:center;gap:6px;min-height:36px;}
+#combat-hud::-webkit-scrollbar{display:none;}
+#roll-prompt-bar{flex-shrink:0;display:none;padding:8px 12px;background:linear-gradient(90deg,rgba(201,168,76,.15),rgba(201,168,76,.04));border-top:2px solid var(--gold);align-items:center;justify-content:space-between;gap:10px;animation:rollPulse 1.2s ease-in-out infinite;}
+@keyframes rollPulse{0%,100%{border-top-color:var(--gold)}50%{border-top-color:var(--gold-bright);box-shadow:0 -6px 24px rgba(201,168,76,.35)}}
+#roll-prompt-label{font-family:'Cinzel',serif;font-size:11px;letter-spacing:2px;color:var(--gold);text-shadow:0 0 10px var(--gold-glow);flex:1;}
+.roll-now-btn{flex-shrink:0;padding:10px 22px;background:linear-gradient(135deg,rgba(201,168,76,.2),rgba(201,168,76,.05));border:2px solid var(--gold);color:var(--gold);font-family:'Cinzel',serif;font-size:11px;letter-spacing:2px;cursor:pointer;border-radius:3px;animation:rollPulse 1.2s ease-in-out infinite;white-space:nowrap;}
+.roll-now-btn:active{background:rgba(201,168,76,.3);transform:scale(.96);}
+#party-sync-badge{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);z-index:9990;font-family:'Share Tech Mono',monospace;font-size:9px;letter-spacing:1px;color:var(--emerald-bright);background:rgba(0,30,15,.92);border:1px solid var(--emerald-bright);padding:5px 14px;border-radius:14px;opacity:0;transition:opacity .4s;pointer-events:none;white-space:nowrap;max-width:92vw;overflow:hidden;text-overflow:ellipsis;}
+.story-sync-tag{display:inline-block;font-family:'Share Tech Mono',monospace;font-size:8px;letter-spacing:1px;color:var(--emerald-bright);padding:1px 7px;border:1px solid rgba(45,179,96,.4);border-radius:10px;margin-right:6px;vertical-align:middle;}
+#wake-lock-badge{position:fixed;top:calc(var(--safe-top) + 5px);left:50%;transform:translateX(-50%);z-index:9999;font-family:'Share Tech Mono',monospace;font-size:7px;letter-spacing:1px;color:var(--emerald-bright);opacity:0;transition:opacity 1.5s;pointer-events:none;padding:2px 10px;background:rgba(0,20,10,.85);border-radius:10px;white-space:nowrap;}
+.your-turn-flash{animation:yourTurnFlash 0.6s ease-in-out 4;}
+@keyframes yourTurnFlash{0%,100%{background:rgba(5,2,1,.95)}50%{background:rgba(201,168,76,.1);box-shadow:0 0 12px rgba(201,168,76,.3)}}
+@media(max-width:480px){.dm-layout{grid-template-columns:1fr 140px 1fr;grid-template-rows:45% 55%;}.dm-chat-msgs{height:56px;}.topbar-title{font-size:10px;letter-spacing:2px;}#roll-prompt-label{font-size:9px;}.roll-now-btn{font-size:9px;padding:8px 14px;}}
+@media(max-width:360px){.dm-layout{grid-template-columns:1fr 118px 1fr;}.nav-tab{font-size:6px;padding:8px 1px 6px;min-width:42px;}#roll-prompt-label{font-size:8px;letter-spacing:1px;}}
 </style>
 </head>
 <body>
 <div class="sfx-indicator" id="sfx-indicator">♪</div>
 <div class="stat-notif" id="stat-notif"></div>
+<!-- Patch v4.4 badges -->
+<div id="party-sync-badge"></div>
+<div id="wake-lock-badge">📱 SCREEN ACTIVE</div>
 
 <!-- DICE OVERLAY -->
 <div id="dice-overlay">
@@ -445,8 +463,6 @@ body::after{content:'';position:fixed;inset:0;background:radial-gradient(ellipse
       <button class="party-tab-btn" onclick="switchPartyTab('join')">🚪 JOIN</button>
       <button class="party-tab-btn" onclick="switchPartyTab('current')">👥 PARTY</button>
     </div>
-
-    <!-- HOST TAB -->
     <div class="party-tab active" id="ptab-host">
       <div style="font-family:'IM Fell English',serif;font-style:italic;font-size:12px;color:var(--parch-dim);line-height:1.8;margin-bottom:14px;">Create a party. Share the 6-letter code with friends — they join from any device, anywhere.</div>
       <div class="party-field"><label class="party-label">YOUR DISPLAY NAME</label><input class="party-input" id="host-name-input" placeholder="Enter your adventurer name..." maxlength="20"/></div>
@@ -461,8 +477,6 @@ body::after{content:'';position:fixed;inset:0;background:radial-gradient(ellipse
       <button class="party-btn" id="create-party-btn" onclick="createParty()">⚔️ CREATE PARTY</button>
       <button class="party-btn cancel" onclick="closePartyModal()">CANCEL</button>
     </div>
-
-    <!-- JOIN TAB -->
     <div class="party-tab" id="ptab-join">
       <div style="font-family:'IM Fell English',serif;font-style:italic;font-size:12px;color:var(--parch-dim);line-height:1.8;margin-bottom:14px;">Enter the party code from your host to join from any device.</div>
       <div class="party-field"><label class="party-label">YOUR DISPLAY NAME</label><input class="party-input" id="join-name-input" placeholder="Enter your adventurer name..." maxlength="20"/></div>
@@ -471,8 +485,6 @@ body::after{content:'';position:fixed;inset:0;background:radial-gradient(ellipse
       <button class="party-btn" id="join-party-btn" onclick="joinParty()">🚪 JOIN PARTY</button>
       <button class="party-btn cancel" onclick="closePartyModal()">CANCEL</button>
     </div>
-
-    <!-- CURRENT PARTY TAB -->
     <div class="party-tab" id="ptab-current">
       <div id="no-party-msg" style="font-family:'IM Fell English',serif;font-style:italic;font-size:12px;color:var(--parch-faint);text-align:center;padding:20px;">Not in a party. Host or join one first.</div>
       <div id="current-party-info" style="display:none;">
@@ -490,7 +502,7 @@ body::after{content:'';position:fixed;inset:0;background:radial-gradient(ellipse
 <div class="app">
   <div class="topbar">
     <div class="topbar-emblem"><span class="emblem-icon">⚔️</span><span class="topbar-title">DUNGEON MASTER AI</span></div>
-    <div class="topbar-right"><b id="sys-status">REALM ONLINE</b><br/>XenClipse · v4.3</div>
+    <div class="topbar-right"><b id="sys-status">REALM ONLINE</b><br/>XenClipse · v4.4</div>
   </div>
   <nav class="nav">
     <button class="nav-tab active" onclick="showScreen('tavern',this)"><span class="nav-icon">🏰</span>TAVERN</button>
@@ -590,7 +602,7 @@ body::after{content:'';position:fixed;inset:0;background:radial-gradient(ellipse
 
                     — XenClipse DM Oracle<div class="cur"></div></pre>
       </div>
-      <div class="ftr">XENCLIPSE STUDIOS · DM ORACLE v4.3 · ALL REALMS OPERATIONAL</div>
+      <div class="ftr">XENCLIPSE STUDIOS · DM ORACLE v4.4 · ALL REALMS OPERATIONAL</div>
     </div>
 
     <!-- DM ORACLE -->
@@ -682,9 +694,16 @@ body::after{content:'';position:fixed;inset:0;background:radial-gradient(ellipse
         </div>
       </div>
       <div id="party-hud"><div class="party-hud-inner" id="party-hud-inner"></div></div>
-      <div class="dm-chat-bar">
+      <!-- PATCH v4.4: Combat Turn Order HUD -->
+      <div id="combat-hud"></div>
+      <!-- PATCH v4.4: Auto Roll Prompt Bar -->
+      <div id="roll-prompt-bar">
+        <span id="roll-prompt-label">Roll the dice!</span>
+        <button class="roll-now-btn" onclick="executeRollFromPrompt()">🎲 ROLL NOW</button>
+      </div>
+      <div class="dm-chat-bar" id="dm-chat-bar">
         <div id="cmsgs" class="dm-chat-msgs" style="display:flex;flex-direction:column;">
-          <div class="msg ai"><div class="spkr">DUNGEON MASTER //</div>*The torch flickers as a cloaked figure turns from an ancient tome...* Enter your Groq API key on the <strong>LORE</strong> tab to awaken the DM Oracle.</div>
+          <div class="msg ai"><div class="spkr">DUNGEON MASTER //</div>*The torch flickers as a cloaked figure turns from an ancient tome...* Enter your Groq API key on the <strong>LORE</strong> tab to awaken the DM Oracle. When combat begins, a <strong>🎲 ROLL NOW</strong> button will appear automatically!</div>
         </div>
         <div class="suggs">
           <button class="sb" onclick="ask(this)">Start adventure</button>
@@ -890,12 +909,12 @@ body::after{content:'';position:fixed;inset:0;background:radial-gradient(ellipse
       </div>
       <div class="panel">
         <div class="pl">🌐 PARTY SYSTEM INFO <span>CROSS-DEVICE</span></div>
-        <div style="font-family:'IM Fell English',serif;font-style:italic;font-size:12px;color:var(--parch-dim);line-height:1.8;padding:9px;background:rgba(201,168,76,.02);border:1px solid var(--border);border-radius:3px;margin-bottom:9px;">The Party System uses a <span style="color:var(--gold)">public MQTT WebSocket broker</span> (HiveMQ) for true cross-device, cross-network play — no account or setup needed. Create a party on one device, share the 6-letter code, and friends join from anywhere in the world instantly.</div>
+        <div style="font-family:'IM Fell English',serif;font-style:italic;font-size:12px;color:var(--parch-dim);line-height:1.8;padding:9px;background:rgba(201,168,76,.02);border:1px solid var(--border);border-radius:3px;margin-bottom:9px;">The Party System uses a <span style="color:var(--gold)">public MQTT WebSocket broker</span> (HiveMQ) for true cross-device, cross-network play. <strong style="color:var(--gold);">v4.4 NEW:</strong> All party members now see the <em>same DM story in real time</em>, get prompted to roll dice on their turn, and the combat turn order rotates automatically between all players and enemies.</div>
         <div class="party-info">
           <div class="pi-box"><span class="pi-key">BACKEND</span><span class="pi-val hi">MQTT WebSocket</span></div>
           <div class="pi-box"><span class="pi-key">SYNC SPEED</span><span class="pi-val hi">&lt;300ms</span></div>
-          <div class="pi-box"><span class="pi-key">CROSS-DEVICE</span><span class="pi-val hi">YES ✓</span></div>
-          <div class="pi-box"><span class="pi-key">SETUP NEEDED</span><span class="pi-val hi">NONE ✓</span></div>
+          <div class="pi-box"><span class="pi-key">STORY SYNC</span><span class="pi-val hi">YES v4.4 ✓</span></div>
+          <div class="pi-box"><span class="pi-key">TURN SYSTEM</span><span class="pi-val hi">YES v4.4 ✓</span></div>
         </div>
       </div>
       <div class="panel">
@@ -905,7 +924,7 @@ body::after{content:'';position:fixed;inset:0;background:radial-gradient(ellipse
           <div class="pi-box"><span class="pi-key">AI MODEL</span><span class="pi-val hi">LLaMA 3.3 70B</span></div>
           <div class="pi-box"><span class="pi-key">POWERED BY</span><span class="pi-val">Groq API</span></div>
           <div class="pi-box"><span class="pi-key">RULES ENGINE</span><span class="pi-val hi">D&D 5e SRD</span></div>
-          <div class="pi-box"><span class="pi-key">MULTIPLAYER</span><span class="pi-val hi">MQTT WS</span></div>
+          <div class="pi-box"><span class="pi-key">VERSION</span><span class="pi-val hi">v4.4</span></div>
         </div>
       </div>
       <div class="panel">
@@ -924,327 +943,55 @@ body::after{content:'';position:fixed;inset:0;background:radial-gradient(ellipse
 </div>
 
 <script>
-/* ═══════════════════════════════════════════════════════════════
-   PARTY SYSTEM — MQTT over WebSocket (HiveMQ public broker)
-   No Firebase, no accounts, no setup required.
-   Uses: wss://broker.hivemq.com:8884/mqtt
-   Each party gets a unique topic namespace: dm-oracle/PARTYCODE/#
-   ═══════════════════════════════════════════════════════════════ */
-
-// ── MQTT state ──
-let mqttClient = null;
-let mqttConnected = false;
-let partyCode = null;
-let partyRole = null;   // 'host' | 'member'
-let myPartyName = '';
-let partyMembers = {};  // { name: memberData }
-
+/* ═══ PARTY SYSTEM — MQTT ═══ */
+let mqttClient = null, mqttConnected = false, partyCode = null, partyRole = null, myPartyName = '', partyMembers = {};
 const MQTT_BROKER = 'wss://broker.hivemq.com:8884/mqtt';
-
-function mqttTopic(suffix) {
-  return 'dm-oracle-v1/' + partyCode + '/' + suffix;
-}
-
+function mqttTopic(suffix) { return 'dm-oracle-v1/' + partyCode + '/' + suffix; }
 function mqttConnect(onConnected) {
   const clientId = 'dmo_' + Math.random().toString(36).substr(2, 9);
-  
-  try {
-    mqttClient = mqtt.connect(MQTT_BROKER, {
-      clientId,
-      clean: true,
-      connectTimeout: 8000,
-      reconnectPeriod: 3000,
-      keepalive: 30
-    });
-  } catch(e) {
-    console.error('MQTT connect error:', e);
-    setWsStatus('error', '⚠ Could not connect — check internet connection');
-    return;
-  }
-
-  mqttClient.on('connect', () => {
-    mqttConnected = true;
-    console.log('MQTT connected:', clientId);
-    setWsStatus('connected', '✓ CONNECTED TO REALM SERVER — READY');
-    if (onConnected) onConnected();
-  });
-
-  mqttClient.on('error', (err) => {
-    console.error('MQTT error:', err);
-    setWsStatus('error', '⚠ CONNECTION ERROR — Retrying...');
-  });
-
-  mqttClient.on('reconnect', () => {
-    setWsStatus('connecting', '⏳ RECONNECTING TO REALM SERVER...');
-  });
-
-  mqttClient.on('offline', () => {
-    mqttConnected = false;
-    setWsStatus('error', '⚠ OFFLINE — Check your internet connection');
-  });
-
-  mqttClient.on('message', (topic, message) => {
-    try {
-      const payload = JSON.parse(message.toString());
-      handleMqttMessage(topic, payload);
-    } catch(e) {
-      console.warn('Bad MQTT message:', e);
-    }
-  });
+  try { mqttClient = mqtt.connect(MQTT_BROKER, { clientId, clean: true, connectTimeout: 8000, reconnectPeriod: 3000, keepalive: 30 }); } catch(e) { setWsStatus('error','⚠ Could not connect'); return; }
+  mqttClient.on('connect', () => { mqttConnected = true; setWsStatus('connected','✓ CONNECTED TO REALM SERVER — READY'); if (onConnected) onConnected(); });
+  mqttClient.on('error', (err) => { setWsStatus('error','⚠ CONNECTION ERROR — Retrying...'); });
+  mqttClient.on('reconnect', () => { setWsStatus('connecting','⏳ RECONNECTING...'); });
+  mqttClient.on('offline', () => { mqttConnected = false; setWsStatus('error','⚠ OFFLINE'); });
+  mqttClient.on('message', (topic, message) => { try { handleMqttMessage(topic, JSON.parse(message.toString())); } catch(e) {} });
 }
-
 function handleMqttMessage(topic, payload) {
-  const parts = topic.split('/');
-  // topic format: dm-oracle-v1/PARTYCODE/TYPE
-  const msgType = parts[2];
-
-  if (msgType === 'member') {
-    // A member published their state
-    const name = payload.name;
-    if (!name) return;
-    partyMembers[name] = { ...payload, lastSeen: Date.now() };
-    renderPartyHUD();
-    updatePartyTab();
-  } else if (msgType === 'leave') {
-    // A member left
-    const name = payload.name;
-    if (name && partyMembers[name]) {
-      partyMembers[name].online = false;
-      renderPartyHUD();
-      updatePartyTab();
-    }
-  } else if (msgType === 'ping') {
-    // Host or member ping to announce presence
-    if (payload.name && payload.name !== myPartyName) {
-      partyMembers[payload.name] = { ...payload, online: true, lastSeen: Date.now() };
-      renderPartyHUD();
-      updatePartyTab();
-      // Send our state back so they see us too
-      publishMyState();
+  const parts = topic.split('/'), msgType = parts[2];
+  if (msgType === 'member') { if (!payload.name) return; partyMembers[payload.name] = { ...payload, lastSeen: Date.now() }; renderPartyHUD(); updatePartyTab(); }
+  else if (msgType === 'leave') { if (payload.name && partyMembers[payload.name]) { partyMembers[payload.name].online = false; renderPartyHUD(); updatePartyTab(); } }
+  else if (msgType === 'ping') { if (payload.name && payload.name !== myPartyName) { partyMembers[payload.name] = { ...payload, online: true, lastSeen: Date.now() }; renderPartyHUD(); updatePartyTab(); publishMyState(); } }
+  else if (msgType === 'story') {
+    if (payload.from !== myPartyName) {
+      const tag = `<span class="story-sync-tag">📡 ${payload.from}</span>`;
+      addMsg('ai', tag + payload.dmText);
+      speak(payload.dmText);
+      autoSFXFromText(payload.dmText);
+      parseAndApplyStatChanges(payload.dmText);
+      detectRollRequests(payload.dmText);
     }
   }
-}
-
-function subscribeToParty() {
-  if (!mqttClient || !partyCode) return;
-  mqttClient.subscribe(mqttTopic('#'), { qos: 0 }, (err) => {
-    if (err) console.error('Subscribe error:', err);
-    else console.log('Subscribed to party:', partyCode);
-  });
-}
-
-function publishMyState() {
-  if (!mqttClient || !mqttConnected || !partyCode) return;
-  const state = {
-    name: myPartyName,
-    class: localStorage.getItem('dm_char_class') || 'Adventurer',
-    hp: vitals.hp,
-    maxHp: vitals.maxHp,
-    stamina: vitals.stamina,
-    maxStamina: vitals.maxStamina,
-    online: true,
-    isHost: partyRole === 'host',
-    lastSeen: Date.now()
-  };
-  // Update our own record locally too
-  partyMembers[myPartyName] = state;
-  mqttClient.publish(mqttTopic('member'), JSON.stringify(state), { qos: 0, retain: true });
-}
-
-function publishPing() {
-  if (!mqttClient || !mqttConnected || !partyCode) return;
-  const ping = {
-    name: myPartyName,
-    class: localStorage.getItem('dm_char_class') || 'Adventurer',
-    hp: vitals.hp,
-    maxHp: vitals.maxHp,
-    stamina: vitals.stamina,
-    maxStamina: vitals.maxStamina,
-    online: true,
-    isHost: partyRole === 'host',
-    lastSeen: Date.now()
-  };
-  mqttClient.publish(mqttTopic('ping'), JSON.stringify(ping), { qos: 0 });
-}
-
-function setWsStatus(type, msg) {
-  const el = document.getElementById('ws-connection-status');
-  if (!el) return;
-  el.className = 'party-status-banner ' + type;
-  el.textContent = msg;
-}
-
-function generateCode() {
-  const c = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-  let code = '';
-  for (let i = 0; i < 6; i++) code += c[Math.floor(Math.random() * c.length)];
-  return code;
-}
-
-// ── Create Party ──
-function createParty() {
-  const nameEl = document.getElementById('host-name-input');
-  myPartyName = nameEl.value.trim() || localStorage.getItem('dm_char_name') || 'Host';
-
-  const btn = document.getElementById('create-party-btn');
-  btn.disabled = true;
-  btn.textContent = '⏳ CREATING...';
-
-  partyCode = generateCode();
-  partyRole = 'host';
-
-  // Show the code immediately
-  document.getElementById('party-code-section').style.display = 'block';
-  document.getElementById('party-code-display-el').textContent = partyCode;
-  btn.style.display = 'none';
-  setWsStatus('connecting', '⏳ CONNECTING TO REALM SERVER...');
-
-  mqttConnect(() => {
-    // Connected — subscribe, publish state, then ping
-    subscribeToParty();
-    setTimeout(() => {
-      publishMyState();
-      publishPing();
-      showSfxInd('PARTY CREATED: ' + partyCode);
-    }, 300);
-  });
-
-  // Heartbeat — re-publish state every 10s so members see us
-  window._partyHeartbeat = setInterval(() => {
-    if (mqttConnected) publishMyState();
-  }, 10000);
-}
-
-// ── Join Party ──
-function joinParty() {
-  const nameEl = document.getElementById('join-name-input');
-  const codeEl = document.getElementById('join-code-input');
-  const statusEl = document.getElementById('join-status');
-  const btn = document.getElementById('join-party-btn');
-
-  myPartyName = nameEl.value.trim() || localStorage.getItem('dm_char_name') || 'Adventurer';
-  const code = codeEl.value.trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
-
-  if (code.length !== 6) {
-    statusEl.textContent = '⚠ Enter a valid 6-character code';
-    statusEl.style.color = 'var(--blood-bright)';
-    return;
-  }
-
-  statusEl.textContent = '⏳ Connecting to realm...';
-  statusEl.style.color = 'var(--gold)';
-  btn.disabled = true;
-  btn.textContent = '⏳ JOINING...';
-
-  partyCode = code;
-  partyRole = 'member';
-
-  mqttConnect(() => {
-    subscribeToParty();
-    setTimeout(() => {
-      publishMyState();
-      publishPing(); // This triggers host/others to respond with their state
-      statusEl.textContent = '✓ Connected! Waiting for party members...';
-      statusEl.style.color = 'var(--emerald-bright)';
-      renderPartyHUD();
-      updatePartyTab();
-      showSfxInd('JOINED PARTY!');
-      sfx_levelup();
-      setTimeout(() => closePartyModal(), 2000);
-    }, 500);
-  });
-
-  // Heartbeat
-  window._partyHeartbeat = setInterval(() => {
-    if (mqttConnected) publishMyState();
-  }, 10000);
-}
-
-// ── Broadcast vitals update ──
-function broadcastPartyUpdate() {
-  if (!partyCode || !myPartyName || !mqttConnected) return;
-  publishMyState();
-}
-
-// ── Leave Party ──
-function leaveParty() {
-  if (mqttClient && mqttConnected && partyCode) {
-    const leaveMsg = { name: myPartyName };
-    mqttClient.publish(mqttTopic('leave'), JSON.stringify(leaveMsg), { qos: 0 }, () => {
-      mqttClient.end(true);
-    });
-  } else if (mqttClient) {
-    mqttClient.end(true);
-  }
-
-  if (window._partyHeartbeat) { clearInterval(window._partyHeartbeat); window._partyHeartbeat = null; }
-
-  mqttClient = null;
-  mqttConnected = false;
-  partyCode = null;
-  partyRole = null;
-  partyMembers = {};
-  myPartyName = '';
-
-  document.getElementById('tavern-party-status').textContent = 'SOLO';
-  renderPartyHUD();
-  updatePartyTab();
-  closePartyModal();
-  showSfxInd('LEFT PARTY');
-}
-
-// ── Render party HUD ──
-function renderPartyHUD() {
-  const hud = document.getElementById('party-hud'), inner = document.getElementById('party-hud-inner');
-  const members = Object.values(partyMembers);
-  if (!partyCode || members.length === 0) { hud.classList.remove('visible'); return; }
-  hud.classList.add('visible');
-  document.getElementById('tavern-party-status').textContent = members.length + ' PLAYERS';
-  inner.innerHTML = members.map(m => {
-    const hpPct = m.maxHp > 0 ? Math.max(0, Math.min(100, (m.hp / m.maxHp) * 100)) : 100;
-    const stPct = m.maxStamina > 0 ? Math.max(0, Math.min(100, (m.stamina / m.maxStamina) * 100)) : 100;
-    const isMe = m.name === myPartyName;
-    const isOnline = m.online && (Date.now() - (m.lastSeen || 0) < 30000);
-    return `<div class="party-member-hud" style="${isMe ? 'border-color:rgba(201,168,76,.5);' : ''}">
-      <div class="pmh-name"><div class="pmh-dot ${isOnline ? '' : 'offline'}"></div>${m.name}${isMe ? ' (YOU)' : ''}${m.isHost ? ' 👑' : ''}</div>
-      <div style="font-family:'Share Tech Mono',monospace;font-size:7px;color:var(--parch-faint);margin-bottom:3px;">${m.class || '?'}</div>
-      <div class="pmh-bars">
-        <div class="pmh-bar-row"><span class="pmh-bar-icon">❤️</span><div class="pmh-bar-track"><div class="pmh-bar-fill vf-hp" style="width:${hpPct}%"></div></div><span style="font-family:'Share Tech Mono',monospace;font-size:7px;color:var(--gold);margin-left:2px;">${m.hp||0}/${m.maxHp||0}</span></div>
-        <div class="pmh-bar-row"><span class="pmh-bar-icon">⚡</span><div class="pmh-bar-track"><div class="pmh-bar-fill vf-stamina" style="width:${stPct}%"></div></div></div>
-      </div>
-    </div>`;
-  }).join('');
-}
-
-function updatePartyTab() {
-  const noParty = document.getElementById('no-party-msg');
-  const partyInfo = document.getElementById('current-party-info');
-  const memberList = document.getElementById('current-member-list');
-  const codeEl = document.getElementById('current-party-code');
-  const members = Object.values(partyMembers);
-  if (!partyCode) { noParty.style.display = 'block'; partyInfo.style.display = 'none'; return; }
-  noParty.style.display = 'none'; partyInfo.style.display = 'block';
-  if (codeEl) codeEl.textContent = partyCode;
-  if (memberList) {
-    memberList.innerHTML = members.map(m => {
-      const isOnline = m.online && (Date.now() - (m.lastSeen || 0) < 30000);
-      return `<div class="party-member">
-        <div class="pm-dot ${isOnline ? 'online' : 'offline'}"></div>
-        <div class="pm-name">${m.name}${m.isHost ? ' 👑' : ''}</div>
-        <div class="pm-class">${m.class || '?'}</div>
-        <div class="pm-hp">❤️ ${m.hp||0}/${m.maxHp||0}</div>
-      </div>`;
-    }).join('');
+  else if (msgType === 'roll') { if (payload.name !== myPartyName) addMsg('ai', `*🎲 ${payload.name} rolled <strong>${payload.result}</strong> on d${payload.die} for ${payload.type||'check'}*`); }
+  else if (msgType === 'turn') {
+    const myName = myPartyName || localStorage.getItem('dm_char_name') || '';
+    if (payload.forPlayer === myName) { showRollPrompt('attack', 20, `⚔️ YOUR TURN in Round ${payload.round}! Roll d20 to Attack`, myName); addMsg('ai', `*⚔️ It is YOUR turn, ${myName}! Hit the ROLL NOW button!*`); }
+    else { addMsg('ai', `*⚔️ It is ${payload.forPlayer}'s turn...*`); }
   }
 }
-
+function subscribeToParty() { if (!mqttClient || !partyCode) return; mqttClient.subscribe(mqttTopic('#'), { qos: 0 }); }
+function publishMyState() { if (!mqttClient || !mqttConnected || !partyCode) return; const state = { name: myPartyName, class: localStorage.getItem('dm_char_class') || 'Adventurer', hp: vitals.hp, maxHp: vitals.maxHp, stamina: vitals.stamina, maxStamina: vitals.maxStamina, online: true, isHost: partyRole === 'host', lastSeen: Date.now() }; partyMembers[myPartyName] = state; mqttClient.publish(mqttTopic('member'), JSON.stringify(state), { qos: 0, retain: true }); }
+function publishPing() { if (!mqttClient || !mqttConnected || !partyCode) return; mqttClient.publish(mqttTopic('ping'), JSON.stringify({ name: myPartyName, class: localStorage.getItem('dm_char_class') || 'Adventurer', hp: vitals.hp, maxHp: vitals.maxHp, stamina: vitals.stamina, maxStamina: vitals.maxStamina, online: true, isHost: partyRole === 'host', lastSeen: Date.now() }), { qos: 0 }); }
+function setWsStatus(type, msg) { const el = document.getElementById('ws-connection-status'); if (!el) return; el.className = 'party-status-banner ' + type; el.textContent = msg; }
+function generateCode() { const c = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; let code = ''; for (let i = 0; i < 6; i++) code += c[Math.floor(Math.random() * c.length)]; return code; }
+function createParty() { const nameEl = document.getElementById('host-name-input'); myPartyName = nameEl.value.trim() || localStorage.getItem('dm_char_name') || 'Host'; const btn = document.getElementById('create-party-btn'); btn.disabled = true; btn.textContent = '⏳ CREATING...'; partyCode = generateCode(); partyRole = 'host'; document.getElementById('party-code-section').style.display = 'block'; document.getElementById('party-code-display-el').textContent = partyCode; btn.style.display = 'none'; setWsStatus('connecting','⏳ CONNECTING TO REALM SERVER...'); mqttConnect(() => { subscribeToParty(); setTimeout(() => { publishMyState(); publishPing(); showSfxInd('PARTY CREATED: ' + partyCode); }, 300); }); window._partyHeartbeat = setInterval(() => { if (mqttConnected) publishMyState(); }, 10000); }
+function joinParty() { const nameEl = document.getElementById('join-name-input'), codeEl = document.getElementById('join-code-input'), statusEl = document.getElementById('join-status'), btn = document.getElementById('join-party-btn'); myPartyName = nameEl.value.trim() || localStorage.getItem('dm_char_name') || 'Adventurer'; const code = codeEl.value.trim().toUpperCase().replace(/[^A-Z0-9]/g,''); if (code.length !== 6) { statusEl.textContent = '⚠ Enter a valid 6-character code'; statusEl.style.color = 'var(--blood-bright)'; return; } statusEl.textContent = '⏳ Connecting to realm...'; statusEl.style.color = 'var(--gold)'; btn.disabled = true; btn.textContent = '⏳ JOINING...'; partyCode = code; partyRole = 'member'; mqttConnect(() => { subscribeToParty(); setTimeout(() => { publishMyState(); publishPing(); statusEl.textContent = '✓ Connected! Waiting for party members...'; statusEl.style.color = 'var(--emerald-bright)'; renderPartyHUD(); updatePartyTab(); showSfxInd('JOINED PARTY!'); sfx_levelup(); setTimeout(() => closePartyModal(), 2000); }, 500); }); window._partyHeartbeat = setInterval(() => { if (mqttConnected) publishMyState(); }, 10000); }
+function broadcastPartyUpdate() { if (!partyCode || !myPartyName || !mqttConnected) return; publishMyState(); }
+function leaveParty() { if (mqttClient && mqttConnected && partyCode) { mqttClient.publish(mqttTopic('leave'), JSON.stringify({ name: myPartyName }), { qos: 0 }, () => { mqttClient.end(true); }); } else if (mqttClient) { mqttClient.end(true); } if (window._partyHeartbeat) { clearInterval(window._partyHeartbeat); window._partyHeartbeat = null; } mqttClient = null; mqttConnected = false; partyCode = null; partyRole = null; partyMembers = {}; myPartyName = ''; document.getElementById('tavern-party-status').textContent = 'SOLO'; renderPartyHUD(); updatePartyTab(); closePartyModal(); showSfxInd('LEFT PARTY'); }
+function renderPartyHUD() { const hud = document.getElementById('party-hud'), inner = document.getElementById('party-hud-inner'); const members = Object.values(partyMembers); if (!partyCode || members.length === 0) { hud.classList.remove('visible'); return; } hud.classList.add('visible'); document.getElementById('tavern-party-status').textContent = members.length + ' PLAYERS'; inner.innerHTML = members.map(m => { const hpPct = m.maxHp > 0 ? Math.max(0, Math.min(100, (m.hp / m.maxHp) * 100)) : 100; const stPct = m.maxStamina > 0 ? Math.max(0, Math.min(100, (m.stamina / m.maxStamina) * 100)) : 100; const isMe = m.name === myPartyName; const isOnline = m.online && (Date.now() - (m.lastSeen || 0) < 30000); return `<div class="party-member-hud" style="${isMe ? 'border-color:rgba(201,168,76,.5);' : ''}"><div class="pmh-name"><div class="pmh-dot ${isOnline ? '' : 'offline'}"></div>${m.name}${isMe ? ' (YOU)' : ''}${m.isHost ? ' 👑' : ''}</div><div style="font-family:'Share Tech Mono',monospace;font-size:7px;color:var(--parch-faint);margin-bottom:3px;">${m.class || '?'}</div><div class="pmh-bars"><div class="pmh-bar-row"><span class="pmh-bar-icon">❤️</span><div class="pmh-bar-track"><div class="pmh-bar-fill vf-hp" style="width:${hpPct}%"></div></div><span style="font-family:'Share Tech Mono',monospace;font-size:7px;color:var(--gold);margin-left:2px;">${m.hp||0}/${m.maxHp||0}</span></div><div class="pmh-bar-row"><span class="pmh-bar-icon">⚡</span><div class="pmh-bar-track"><div class="pmh-bar-fill vf-stamina" style="width:${stPct}%"></div></div></div></div></div>`; }).join(''); }
+function updatePartyTab() { const noParty = document.getElementById('no-party-msg'), partyInfo = document.getElementById('current-party-info'), memberList = document.getElementById('current-member-list'), codeEl = document.getElementById('current-party-code'), members = Object.values(partyMembers); if (!partyCode) { noParty.style.display = 'block'; partyInfo.style.display = 'none'; return; } noParty.style.display = 'none'; partyInfo.style.display = 'block'; if (codeEl) codeEl.textContent = partyCode; if (memberList) memberList.innerHTML = members.map(m => { const isOnline = m.online && (Date.now() - (m.lastSeen || 0) < 30000); return `<div class="party-member"><div class="pm-dot ${isOnline ? 'online' : 'offline'}"></div><div class="pm-name">${m.name}${m.isHost ? ' 👑' : ''}</div><div class="pm-class">${m.class || '?'}</div><div class="pm-hp">❤️ ${m.hp||0}/${m.maxHp||0}</div></div>`; }).join(''); }
 function openPartyModal() { document.getElementById('party-modal').classList.add('show'); updatePartyTab(); }
 function closePartyModal() { document.getElementById('party-modal').classList.remove('show'); }
-function switchPartyTab(name) {
-  document.querySelectorAll('.party-tab-btn').forEach((b, i) => b.classList.toggle('active', ['host','join','current'][i] === name));
-  document.querySelectorAll('.party-tab').forEach((t, i) => t.classList.toggle('active', ['ptab-host','ptab-join','ptab-current'][i] === 'ptab-' + name));
-  if (name === 'current') updatePartyTab();
-}
+function switchPartyTab(name) { document.querySelectorAll('.party-tab-btn').forEach((b,i) => b.classList.toggle('active',['host','join','current'][i]===name)); document.querySelectorAll('.party-tab').forEach((t,i) => t.classList.toggle('active',['ptab-host','ptab-join','ptab-current'][i]==='ptab-'+name)); if (name==='current') updatePartyTab(); }
 
 /* ═══ AUDIO ENGINE ═══ */
 const AudioCtx = window.AudioContext || window.webkitAudioContext;
@@ -1256,95 +1003,69 @@ function toggleSfxMasterDM() { sfxEnabled = !sfxEnabled; const btn = document.ge
 function stopAllAmbient() { Object.keys(ambientNodes).forEach(k => { const n = ambientNodes[k]; if (n?.playing && n?.gainNode) { n.gainNode.gain.setTargetAtTime(0, getAC().currentTime, 0.5); n.playing = false; const btn = document.getElementById('sfx-btn-' + k); if (btn) btn.classList.remove('playing'); } }); }
 const ambientNodes = {}; let ambientVolume = 0.4;
 function setAmbientVolume(v) { ambientVolume = v / 100; Object.values(ambientNodes).forEach(n => { if (n?.gainNode) n.gainNode.gain.setTargetAtTime(n.playing ? ambientVolume * n.baseVol : 0, getAC().currentTime, 0.3); }); }
-const AMBIENTS = {
-  fire: { baseVol: 0.5, build(ctx) { const g = ctx.createGain(); g.gain.value = 0; const buf = makeNoise(ctx, 4); const src = ctx.createBufferSource(); src.buffer = buf; src.loop = true; const f = ctx.createBiquadFilter(); f.type = 'bandpass'; f.frequency.value = 300; f.Q.value = 0.8; const f2 = ctx.createBiquadFilter(); f2.type = 'lowpass'; f2.frequency.value = 600; src.connect(f); f.connect(f2); f2.connect(g); g.connect(ctx.destination); src.start(); return { src, g, gainNode: g, baseVol: 0.5 }; } },
-  wind: { baseVol: 0.5, build(ctx) { const g = ctx.createGain(); g.gain.value = 0; const buf = makeNoise(ctx, 6); const src = ctx.createBufferSource(); src.buffer = buf; src.loop = true; const f = ctx.createBiquadFilter(); f.type = 'bandpass'; f.frequency.value = 400; f.Q.value = 0.3; src.connect(f); f.connect(g); g.connect(ctx.destination); src.start(); return { src, g, gainNode: g, baseVol: 0.5 }; } },
-  rain: { baseVol: 0.5, build(ctx) { const g = ctx.createGain(); g.gain.value = 0; const buf = makeNoise(ctx, 8); const src = ctx.createBufferSource(); src.buffer = buf; src.loop = true; const f = ctx.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 2000; src.connect(f); f.connect(g); g.connect(ctx.destination); src.start(); return { src, g, gainNode: g, baseVol: 0.5 }; } },
-  dungeon: { baseVol: 0.35, build(ctx) { const g = ctx.createGain(); g.gain.value = 0; const buf = makeNoise(ctx, 6); const src = ctx.createBufferSource(); src.buffer = buf; src.loop = true; const f = ctx.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 150; src.connect(f); f.connect(g); g.connect(ctx.destination); src.start(); return { src, g, gainNode: g, baseVol: 0.35 }; } },
-  forest: { baseVol: 0.4, build(ctx) { const g = ctx.createGain(); g.gain.value = 0; const buf = makeNoise(ctx, 6); const src = ctx.createBufferSource(); src.buffer = buf; src.loop = true; const f = ctx.createBiquadFilter(); f.type = 'bandpass'; f.frequency.value = 800; f.Q.value = 0.4; src.connect(f); f.connect(g); g.connect(ctx.destination); src.start(); return { src, g, gainNode: g, baseVol: 0.4 }; } },
-  tavern: { baseVol: 0.4, build(ctx) { const g = ctx.createGain(); g.gain.value = 0; const buf = makeNoise(ctx, 8); const src = ctx.createBufferSource(); src.buffer = buf; src.loop = true; const f = ctx.createBiquadFilter(); f.type = 'bandpass'; f.frequency.value = 500; f.Q.value = 0.5; src.connect(f); f.connect(g); g.connect(ctx.destination); src.start(); return { src, g, gainNode: g, baseVol: 0.4 }; } },
-  combat: { baseVol: 0.45, build(ctx) { const g = ctx.createGain(); g.gain.value = 0; const buf = makeNoise(ctx, 4); const src = ctx.createBufferSource(); src.buffer = buf; src.loop = true; const f = ctx.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 250; src.connect(f); f.connect(g); g.connect(ctx.destination); src.start(); return { src, g, gainNode: g, baseVol: 0.45 }; } },
-  ocean: { baseVol: 0.5, build(ctx) { const g = ctx.createGain(); g.gain.value = 0; const buf = makeNoise(ctx, 8); const src = ctx.createBufferSource(); src.buffer = buf; src.loop = true; const f = ctx.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 500; src.connect(f); f.connect(g); g.connect(ctx.destination); src.start(); return { src, g, gainNode: g, baseVol: 0.5 }; } },
-  horror: { baseVol: 0.35, build(ctx) { const g = ctx.createGain(); g.gain.value = 0; const o1 = ctx.createOscillator(); o1.type = 'sawtooth'; o1.frequency.value = 40; const o2 = ctx.createOscillator(); o2.type = 'sawtooth'; o2.frequency.value = 41.2; const hg = ctx.createGain(); hg.gain.value = 0.1; const hf = ctx.createBiquadFilter(); hf.type = 'lowpass'; hf.frequency.value = 180; o1.connect(hf); o2.connect(hf); hf.connect(hg); hg.connect(g); g.connect(ctx.destination); o1.start(); o2.start(); return { o1, o2, g, gainNode: g, baseVol: 0.35 }; } }
-};
-function toggleAmbient(name) { if (!sfxEnabled) { alert('Enable ambient sounds first!'); return; } const ctx = getAC(); const btn = document.getElementById('sfx-btn-' + name); if (ambientNodes[name]?.playing) { const n = ambientNodes[name]; n.gainNode.gain.setTargetAtTime(0, ctx.currentTime, 0.5); n.playing = false; if (btn) btn.classList.remove('playing'); } else { if (!ambientNodes[name]) { const spec = AMBIENTS[name]; const built = spec.build(ctx); ambientNodes[name] = { ...built, playing: true, baseVol: spec.baseVol }; } else { ambientNodes[name].playing = true; } ambientNodes[name].gainNode.gain.setTargetAtTime(ambientVolume * AMBIENTS[name].baseVol, ctx.currentTime, 1.0); if (btn) btn.classList.add('playing'); } }
-function autoSFXFromText(text) { if (!sfxEnabled) return; const t = text.toLowerCase(); const triggers = [{ words: ['fire', 'flame', 'torch', 'hearth'], sfx: 'fire' }, { words: ['wind', 'gust', 'storm'], sfx: 'wind' }, { words: ['rain', 'downpour', 'thunder'], sfx: 'rain' }, { words: ['dungeon', 'cave', 'crypt'], sfx: 'dungeon' }, { words: ['forest', 'trees', 'woods', 'birds'], sfx: 'forest' }, { words: ['tavern', 'inn', 'drinking'], sfx: 'tavern' }, { words: ['battle', 'combat', 'attack', 'fighting'], sfx: 'combat' }, { words: ['ocean', 'sea', 'waves'], sfx: 'ocean' }, { words: ['shadow', 'horror', 'undead', 'vampire'], sfx: 'horror' }]; for (const tr of triggers) { if (tr.words.some(w => t.includes(w)) && !ambientNodes[tr.sfx]?.playing) { toggleAmbient(tr.sfx); break; } } }
-function sfx_click() { try { const ctx = getAC(); const g = ctx.createGain(); g.gain.setValueAtTime(0.05, ctx.currentTime); g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.06); g.connect(ctx.destination); const o = ctx.createOscillator(); o.type = 'sine'; o.frequency.value = 440; o.connect(g); o.start(); o.stop(ctx.currentTime + 0.06); } catch (e) { } }
-function sfx_roll() { try { const ctx = getAC(); const g = ctx.createGain(); g.gain.setValueAtTime(0.1, ctx.currentTime); g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.15); g.connect(ctx.destination); const o = ctx.createOscillator(); o.type = 'triangle'; o.frequency.setValueAtTime(300 + Math.random() * 400, ctx.currentTime); o.frequency.exponentialRampToValueAtTime(100, ctx.currentTime + 0.12); o.connect(g); o.start(); o.stop(ctx.currentTime + 0.15); } catch (e) { } }
-function sfx_critical() { try { const ctx = getAC(); [523, 659, 784].forEach((f, i) => setTimeout(() => { const g = ctx.createGain(); g.gain.setValueAtTime(0.12, ctx.currentTime); g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4); g.connect(ctx.destination); const o = ctx.createOscillator(); o.type = 'sine'; o.frequency.value = f; o.connect(g); o.start(); o.stop(ctx.currentTime + 0.4); }, i * 80)); } catch (e) { } }
-function sfx_fail() { try { const ctx = getAC(); const g = ctx.createGain(); g.gain.setValueAtTime(0.12, ctx.currentTime); g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.8); g.connect(ctx.destination); const o = ctx.createOscillator(); o.type = 'sawtooth'; o.frequency.setValueAtTime(180, ctx.currentTime); o.frequency.exponentialRampToValueAtTime(55, ctx.currentTime + 0.8); o.connect(g); o.start(); o.stop(ctx.currentTime + 0.8); } catch (e) { } }
-function sfx_equip() { try { const ctx = getAC(); const buf = ctx.createBuffer(1, ctx.sampleRate * .1, ctx.sampleRate); const d = buf.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * Math.exp(-i / 3000); const src = ctx.createBufferSource(); src.buffer = buf; const g = ctx.createGain(); g.gain.value = 0.2; src.connect(g); g.connect(ctx.destination); src.start(); } catch (e) { } }
-function sfx_levelup() { try { const ctx = getAC(); [261, 329, 392, 523].forEach((f, i) => setTimeout(() => { const g = ctx.createGain(); g.gain.setValueAtTime(0.1, ctx.currentTime); g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 1); g.connect(ctx.destination); const o = ctx.createOscillator(); o.type = 'sine'; o.frequency.value = f; o.connect(g); o.start(); o.stop(ctx.currentTime + 1); }, i * 100)); } catch (e) { } }
-function sfx_save() { try { const ctx = getAC(); [440, 554, 659].forEach((f, i) => setTimeout(() => { const g = ctx.createGain(); g.gain.setValueAtTime(0.1, ctx.currentTime); g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.25); g.connect(ctx.destination); const o = ctx.createOscillator(); o.type = 'sine'; o.frequency.value = f; o.connect(g); o.start(); o.stop(ctx.currentTime + 0.3); }, i * 120)); } catch (e) { } }
-function sfx_damage() { try { const ctx = getAC(); const g = ctx.createGain(); g.gain.setValueAtTime(0.15, ctx.currentTime); g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3); g.connect(ctx.destination); const o = ctx.createOscillator(); o.type = 'sawtooth'; o.frequency.setValueAtTime(220, ctx.currentTime); o.frequency.exponentialRampToValueAtTime(80, ctx.currentTime + 0.3); o.connect(g); o.start(); o.stop(ctx.currentTime + 0.35); } catch (e) { } }
-function sfx_heal() { try { const ctx = getAC(); [440, 880].forEach((f, i) => setTimeout(() => { const g = ctx.createGain(); g.gain.setValueAtTime(0.08, ctx.currentTime); g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3); g.connect(ctx.destination); const o = ctx.createOscillator(); o.type = 'sine'; o.frequency.value = f; o.connect(g); o.start(); o.stop(ctx.currentTime + 0.35); }, i * 80)); } catch (e) { } }
-function showSfxInd(t) { const e = document.getElementById('sfx-indicator'); e.textContent = '♪ ' + t; e.classList.add('show'); clearTimeout(e._t); e._t = setTimeout(() => e.classList.remove('show'), 1400); }
+const AMBIENTS = { fire:{baseVol:.5,build(ctx){const g=ctx.createGain();g.gain.value=0;const buf=makeNoise(ctx,4);const src=ctx.createBufferSource();src.buffer=buf;src.loop=true;const f=ctx.createBiquadFilter();f.type='bandpass';f.frequency.value=300;f.Q.value=.8;const f2=ctx.createBiquadFilter();f2.type='lowpass';f2.frequency.value=600;src.connect(f);f.connect(f2);f2.connect(g);g.connect(ctx.destination);src.start();return{src,g,gainNode:g,baseVol:.5};}},wind:{baseVol:.5,build(ctx){const g=ctx.createGain();g.gain.value=0;const buf=makeNoise(ctx,6);const src=ctx.createBufferSource();src.buffer=buf;src.loop=true;const f=ctx.createBiquadFilter();f.type='bandpass';f.frequency.value=400;f.Q.value=.3;src.connect(f);f.connect(g);g.connect(ctx.destination);src.start();return{src,g,gainNode:g,baseVol:.5};}},rain:{baseVol:.5,build(ctx){const g=ctx.createGain();g.gain.value=0;const buf=makeNoise(ctx,8);const src=ctx.createBufferSource();src.buffer=buf;src.loop=true;const f=ctx.createBiquadFilter();f.type='lowpass';f.frequency.value=2000;src.connect(f);f.connect(g);g.connect(ctx.destination);src.start();return{src,g,gainNode:g,baseVol:.5};}},dungeon:{baseVol:.35,build(ctx){const g=ctx.createGain();g.gain.value=0;const buf=makeNoise(ctx,6);const src=ctx.createBufferSource();src.buffer=buf;src.loop=true;const f=ctx.createBiquadFilter();f.type='lowpass';f.frequency.value=150;src.connect(f);f.connect(g);g.connect(ctx.destination);src.start();return{src,g,gainNode:g,baseVol:.35};}},forest:{baseVol:.4,build(ctx){const g=ctx.createGain();g.gain.value=0;const buf=makeNoise(ctx,6);const src=ctx.createBufferSource();src.buffer=buf;src.loop=true;const f=ctx.createBiquadFilter();f.type='bandpass';f.frequency.value=800;f.Q.value=.4;src.connect(f);f.connect(g);g.connect(ctx.destination);src.start();return{src,g,gainNode:g,baseVol:.4};}},tavern:{baseVol:.4,build(ctx){const g=ctx.createGain();g.gain.value=0;const buf=makeNoise(ctx,8);const src=ctx.createBufferSource();src.buffer=buf;src.loop=true;const f=ctx.createBiquadFilter();f.type='bandpass';f.frequency.value=500;f.Q.value=.5;src.connect(f);f.connect(g);g.connect(ctx.destination);src.start();return{src,g,gainNode:g,baseVol:.4};}},combat:{baseVol:.45,build(ctx){const g=ctx.createGain();g.gain.value=0;const buf=makeNoise(ctx,4);const src=ctx.createBufferSource();src.buffer=buf;src.loop=true;const f=ctx.createBiquadFilter();f.type='lowpass';f.frequency.value=250;src.connect(f);f.connect(g);g.connect(ctx.destination);src.start();return{src,g,gainNode:g,baseVol:.45};}},ocean:{baseVol:.5,build(ctx){const g=ctx.createGain();g.gain.value=0;const buf=makeNoise(ctx,8);const src=ctx.createBufferSource();src.buffer=buf;src.loop=true;const f=ctx.createBiquadFilter();f.type='lowpass';f.frequency.value=500;src.connect(f);f.connect(g);g.connect(ctx.destination);src.start();return{src,g,gainNode:g,baseVol:.5};}},horror:{baseVol:.35,build(ctx){const g=ctx.createGain();g.gain.value=0;const o1=ctx.createOscillator();o1.type='sawtooth';o1.frequency.value=40;const o2=ctx.createOscillator();o2.type='sawtooth';o2.frequency.value=41.2;const hg=ctx.createGain();hg.gain.value=.1;const hf=ctx.createBiquadFilter();hf.type='lowpass';hf.frequency.value=180;o1.connect(hf);o2.connect(hf);hf.connect(hg);hg.connect(g);g.connect(ctx.destination);o1.start();o2.start();return{o1,o2,g,gainNode:g,baseVol:.35};}} };
+function toggleAmbient(name) { if (!sfxEnabled) { alert('Enable ambient sounds first!'); return; } const ctx = getAC(); const btn = document.getElementById('sfx-btn-' + name); if (ambientNodes[name]?.playing) { ambientNodes[name].gainNode.gain.setTargetAtTime(0, ctx.currentTime, .5); ambientNodes[name].playing = false; if (btn) btn.classList.remove('playing'); } else { if (!ambientNodes[name]) { const spec = AMBIENTS[name]; const built = spec.build(ctx); ambientNodes[name] = { ...built, playing: true, baseVol: spec.baseVol }; } else { ambientNodes[name].playing = true; } ambientNodes[name].gainNode.gain.setTargetAtTime(ambientVolume * AMBIENTS[name].baseVol, ctx.currentTime, 1.0); if (btn) btn.classList.add('playing'); } }
+function autoSFXFromText(text) { if (!sfxEnabled) return; const t = text.toLowerCase(); const triggers = [{words:['fire','flame','torch','hearth'],sfx:'fire'},{words:['wind','gust','storm'],sfx:'wind'},{words:['rain','downpour','thunder'],sfx:'rain'},{words:['dungeon','cave','crypt'],sfx:'dungeon'},{words:['forest','trees','woods','birds'],sfx:'forest'},{words:['tavern','inn','drinking'],sfx:'tavern'},{words:['battle','combat','attack','fighting'],sfx:'combat'},{words:['ocean','sea','waves'],sfx:'ocean'},{words:['shadow','horror','undead','vampire'],sfx:'horror'}]; for (const tr of triggers) { if (tr.words.some(w => t.includes(w)) && !ambientNodes[tr.sfx]?.playing) { toggleAmbient(tr.sfx); break; } } }
+function sfx_click() { try { const ctx=getAC(),g=ctx.createGain();g.gain.setValueAtTime(.05,ctx.currentTime);g.gain.exponentialRampToValueAtTime(.001,ctx.currentTime+.06);g.connect(ctx.destination);const o=ctx.createOscillator();o.type='sine';o.frequency.value=440;o.connect(g);o.start();o.stop(ctx.currentTime+.06); } catch(e){} }
+function sfx_roll() { try { const ctx=getAC(),g=ctx.createGain();g.gain.setValueAtTime(.1,ctx.currentTime);g.gain.exponentialRampToValueAtTime(.001,ctx.currentTime+.15);g.connect(ctx.destination);const o=ctx.createOscillator();o.type='triangle';o.frequency.setValueAtTime(300+Math.random()*400,ctx.currentTime);o.frequency.exponentialRampToValueAtTime(100,ctx.currentTime+.12);o.connect(g);o.start();o.stop(ctx.currentTime+.15); } catch(e){} }
+function sfx_critical() { try { const ctx=getAC();[523,659,784].forEach((f,i)=>setTimeout(()=>{const g=ctx.createGain();g.gain.setValueAtTime(.12,ctx.currentTime);g.gain.exponentialRampToValueAtTime(.001,ctx.currentTime+.4);g.connect(ctx.destination);const o=ctx.createOscillator();o.type='sine';o.frequency.value=f;o.connect(g);o.start();o.stop(ctx.currentTime+.4);},i*80)); } catch(e){} }
+function sfx_fail() { try { const ctx=getAC(),g=ctx.createGain();g.gain.setValueAtTime(.12,ctx.currentTime);g.gain.exponentialRampToValueAtTime(.001,ctx.currentTime+.8);g.connect(ctx.destination);const o=ctx.createOscillator();o.type='sawtooth';o.frequency.setValueAtTime(180,ctx.currentTime);o.frequency.exponentialRampToValueAtTime(55,ctx.currentTime+.8);o.connect(g);o.start();o.stop(ctx.currentTime+.8); } catch(e){} }
+function sfx_equip() { try { const ctx=getAC(),buf=ctx.createBuffer(1,ctx.sampleRate*.1,ctx.sampleRate),d=buf.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=(Math.random()*2-1)*Math.exp(-i/3000);const src=ctx.createBufferSource();src.buffer=buf;const g=ctx.createGain();g.gain.value=.2;src.connect(g);g.connect(ctx.destination);src.start(); } catch(e){} }
+function sfx_levelup() { try { const ctx=getAC();[261,329,392,523].forEach((f,i)=>setTimeout(()=>{const g=ctx.createGain();g.gain.setValueAtTime(.1,ctx.currentTime);g.gain.exponentialRampToValueAtTime(.001,ctx.currentTime+1);g.connect(ctx.destination);const o=ctx.createOscillator();o.type='sine';o.frequency.value=f;o.connect(g);o.start();o.stop(ctx.currentTime+1);},i*100)); } catch(e){} }
+function sfx_save() { try { const ctx=getAC();[440,554,659].forEach((f,i)=>setTimeout(()=>{const g=ctx.createGain();g.gain.setValueAtTime(.1,ctx.currentTime);g.gain.exponentialRampToValueAtTime(.001,ctx.currentTime+.25);g.connect(ctx.destination);const o=ctx.createOscillator();o.type='sine';o.frequency.value=f;o.connect(g);o.start();o.stop(ctx.currentTime+.3);},i*120)); } catch(e){} }
+function sfx_damage() { try { const ctx=getAC(),g=ctx.createGain();g.gain.setValueAtTime(.15,ctx.currentTime);g.gain.exponentialRampToValueAtTime(.001,ctx.currentTime+.3);g.connect(ctx.destination);const o=ctx.createOscillator();o.type='sawtooth';o.frequency.setValueAtTime(220,ctx.currentTime);o.frequency.exponentialRampToValueAtTime(80,ctx.currentTime+.3);o.connect(g);o.start();o.stop(ctx.currentTime+.35); } catch(e){} }
+function sfx_heal() { try { const ctx=getAC();[440,880].forEach((f,i)=>setTimeout(()=>{const g=ctx.createGain();g.gain.setValueAtTime(.08,ctx.currentTime);g.gain.exponentialRampToValueAtTime(.001,ctx.currentTime+.3);g.connect(ctx.destination);const o=ctx.createOscillator();o.type='sine';o.frequency.value=f;o.connect(g);o.start();o.stop(ctx.currentTime+.35);},i*80)); } catch(e){} }
+function showSfxInd(t) { const e=document.getElementById('sfx-indicator');e.textContent='♪ '+t;e.classList.add('show');clearTimeout(e._t);e._t=setTimeout(()=>e.classList.remove('show'),1400); }
 
 /* ═══ STAT NOTIF ═══ */
-function showStatNotif(text, type) { const el = document.getElementById('stat-notif'); el.textContent = text; el.className = 'stat-notif ' + type + ' show'; clearTimeout(el._t); el._t = setTimeout(() => el.classList.remove('show'), 2500); }
+function showStatNotif(text, type) { const el=document.getElementById('stat-notif');el.textContent=text;el.className='stat-notif '+type+' show';clearTimeout(el._t);el._t=setTimeout(()=>el.classList.remove('show'),2500); }
 
 /* ═══ VOICE ═══ */
-let voices = [], voiceGender = 'male', voiceEnabled = true;
+let voices=[], voiceGender='male', voiceEnabled=true;
 function loadV() { voices = window.speechSynthesis ? window.speechSynthesis.getVoices() : []; }
 if (window.speechSynthesis) { loadV(); window.speechSynthesis.onvoiceschanged = loadV; }
 function onVoiceChange() { voiceGender = document.getElementById('voice-selector').value; }
-function toggleVoice() { voiceEnabled = !voiceEnabled; const btn = document.getElementById('voice-toggle-btn'); if (voiceEnabled) { btn.classList.add('active'); btn.textContent = '🎙 VOICE ON'; } else { btn.classList.remove('active'); btn.textContent = '🎙 VOICE'; if (window.speechSynthesis) window.speechSynthesis.cancel(); } }
-function bestVoice() { const mp = ['Google UK English Male', 'Daniel', 'Alex', 'Fred']; const fp = ['Google UK English Female', 'Samantha', 'Karen', 'Moira']; const prefer = voiceGender === 'female' ? fp : mp; for (const n of prefer) { const v = voices.find(x => x.name === n); if (v) return v; } return voices.find(v => v.lang.startsWith('en')) || voices[0]; }
-function speak(txt) { if (!window.speechSynthesis || !voiceEnabled) return; window.speechSynthesis.cancel(); const clean = txt.replace(/[*_`#\[\]]/g, '').trim(); const u = new SpeechSynthesisUtterance(clean); const v = bestVoice(); if (v) u.voice = v; if (voiceGender === 'male') { u.pitch = 0.75; u.rate = 0.78; u.volume = 1.0; } else { u.pitch = 1.1; u.rate = 0.82; u.volume = 1.0; } u.onstart = () => { window.dmSpeaking = true; document.getElementById('fst').textContent = 'SPEAKING ◆'; }; u.onend = u.onerror = () => { window.dmSpeaking = false; document.getElementById('fst').textContent = apiKey ? 'ORACLE AWAKE' : 'DORMANT'; }; window.speechSynthesis.speak(u); }
+function toggleVoice() { voiceEnabled=!voiceEnabled; const btn=document.getElementById('voice-toggle-btn'); if(voiceEnabled){btn.classList.add('active');btn.textContent='🎙 VOICE ON';}else{btn.classList.remove('active');btn.textContent='🎙 VOICE';if(window.speechSynthesis)window.speechSynthesis.cancel();} }
+function bestVoice() { const mp=['Google UK English Male','Daniel','Alex','Fred'],fp=['Google UK English Female','Samantha','Karen','Moira'],prefer=voiceGender==='female'?fp:mp;for(const n of prefer){const v=voices.find(x=>x.name===n);if(v)return v;}return voices.find(v=>v.lang.startsWith('en'))||voices[0]; }
+function speak(txt) { if(!window.speechSynthesis||!voiceEnabled)return;window.speechSynthesis.cancel();const clean=txt.replace(/[*_`#\[\]]/g,'').trim();const u=new SpeechSynthesisUtterance(clean);const v=bestVoice();if(v)u.voice=v;if(voiceGender==='male'){u.pitch=.75;u.rate=.78;u.volume=1;}else{u.pitch=1.1;u.rate=.82;u.volume=1;}u.onstart=()=>{window.dmSpeaking=true;document.getElementById('fst').textContent='SPEAKING ◆';};u.onend=u.onerror=()=>{window.dmSpeaking=false;document.getElementById('fst').textContent=apiKey?'ORACLE AWAKE':'DORMANT';};window.speechSynthesis.speak(u); }
 
 /* ═══ SCREEN NAV ═══ */
 let faceBuilt = false;
-function showScreen(id, tab) { sfx_click(); document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active')); document.getElementById('screen-' + id).classList.add('active'); if (tab) tab.classList.add('active'); if (id === 'dm') { if (!faceBuilt) { buildFace(); faceBuilt = true; } renderDMPanels(); } if (id === 'inventory') renderInventory(); if (id === 'character') loadSavedCharacter(); if (id === 'saves') { renderSaves(); updateAutosaveInfo(); } if (id === 'lore') updateKeyStatusDisplay(); }
+function showScreen(id,tab) { sfx_click(); document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active')); document.getElementById('screen-'+id).classList.add('active'); if(tab)tab.classList.add('active'); if(id==='dm'){if(!faceBuilt){buildFace();faceBuilt=true;}renderDMPanels();} if(id==='inventory')renderInventory(); if(id==='character')loadSavedCharacter(); if(id==='saves'){renderSaves();updateAutosaveInfo();} if(id==='lore')updateKeyStatusDisplay(); }
 
 /* ═══ ENEMY HEALTH BAR ═══ */
 let currentEnemy = null;
-function spawnEnemy(name, maxHp, statuses) { currentEnemy = { name, hp: maxHp, maxHp, statuses: statuses || [] }; updateEnemyBar(); document.getElementById('enemy-bar-container').classList.add('visible'); if (sfxEnabled && !ambientNodes['combat']?.playing) toggleAmbient('combat'); }
-function updateEnemyBar() { if (!currentEnemy) return; const pct = Math.max(0, (currentEnemy.hp / currentEnemy.maxHp) * 100); document.getElementById('enemy-name-text').textContent = '⚔️ ' + currentEnemy.name; document.getElementById('enemy-hp-text').textContent = currentEnemy.hp + '/' + currentEnemy.maxHp; const bar = document.getElementById('enemy-hp-bar'); bar.style.width = pct + '%'; if (pct > 50) bar.style.background = 'linear-gradient(90deg,#4a0000,#cc4400,#ff6600)'; else if (pct > 25) bar.style.background = 'linear-gradient(90deg,#4a0000,#aa2200,#ee4400)'; else bar.style.background = 'linear-gradient(90deg,#3a0000,#880000,#cc1100)'; const sr = document.getElementById('enemy-status-row'); sr.innerHTML = (currentEnemy.statuses || []).map(s => `<span class="enemy-status-tag">${s}</span>`).join(''); }
-function damageEnemy(amount) { if (!currentEnemy) return; currentEnemy.hp = Math.max(0, currentEnemy.hp - amount); updateEnemyBar(); if (currentEnemy.hp <= 0) { showStatNotif('⚔️ ' + currentEnemy.name.toUpperCase() + ' DEFEATED!', 'heal'); sfx_critical(); setTimeout(() => dismissEnemy(), 3000); } }
-function dismissEnemy() { currentEnemy = null; document.getElementById('enemy-bar-container').classList.remove('visible'); }
+function spawnEnemy(name, maxHp, statuses) { currentEnemy={name,hp:maxHp,maxHp,statuses:statuses||[]};updateEnemyBar();document.getElementById('enemy-bar-container').classList.add('visible');if(sfxEnabled&&!ambientNodes['combat']?.playing)toggleAmbient('combat'); if(!combatActive)startCombatTurns(name); }
+function updateEnemyBar() { if(!currentEnemy)return;const pct=Math.max(0,(currentEnemy.hp/currentEnemy.maxHp)*100);document.getElementById('enemy-name-text').textContent='⚔️ '+currentEnemy.name;document.getElementById('enemy-hp-text').textContent=currentEnemy.hp+'/'+currentEnemy.maxHp;const bar=document.getElementById('enemy-hp-bar');bar.style.width=pct+'%';if(pct>50)bar.style.background='linear-gradient(90deg,#4a0000,#cc4400,#ff6600)';else if(pct>25)bar.style.background='linear-gradient(90deg,#4a0000,#aa2200,#ee4400)';else bar.style.background='linear-gradient(90deg,#3a0000,#880000,#cc1100)';const sr=document.getElementById('enemy-status-row');sr.innerHTML=(currentEnemy.statuses||[]).map(s=>`<span class="enemy-status-tag">${s}</span>`).join(''); }
+function damageEnemy(amount) { if(!currentEnemy)return;currentEnemy.hp=Math.max(0,currentEnemy.hp-amount);updateEnemyBar();if(currentEnemy.hp<=0){showStatNotif('⚔️ '+currentEnemy.name.toUpperCase()+' DEFEATED!','heal');sfx_critical();setTimeout(()=>dismissEnemy(),3000);} }
+function dismissEnemy() { currentEnemy=null;document.getElementById('enemy-bar-container').classList.remove('visible');if(combatActive){endCombat();addMsg('ai','*⚔️ Victory! The battle is over. What do you do next?*');} }
 
 /* ═══ AI TEXT PARSER ═══ */
 function parseAndApplyStatChanges(text) {
-  const t = text.toLowerCase();
-  const combatWords = ['attack','battle','combat','fight','enemy','foe','goblin','orc','dragon','vampire','skeleton','zombie','bandit','wolf','bear','troll','giant','demon','devil','undead','creature','monster','ghoul','wight','wraith','spider','kobold','hobgoblin','bugbear'];
-  const hasCombat = combatWords.some(w => t.includes(w));
-  if (hasCombat && !currentEnemy) {
-    let enemyName = 'Enemy';
-    const creatureNames = ['Goblin','Orc','Dragon','Vampire','Skeleton','Zombie','Bandit','Wolf','Bear','Troll','Giant','Demon','Devil','Ghoul','Wight','Wraith','Spider','Kobold','Hobgoblin','Bugbear','Gnoll','Harpy'];
-    for (const c of creatureNames) { if (text.includes(c)) { enemyName = c; break; } }
-    const m = text.match(/(?:A |An |The )([A-Z][a-z]{2,20})\s+(?:appears?|emerges?|charges?|attacks?|lunges?|snarls?|stands?)/);
-    if (m) enemyName = m[1];
-    let hp = 20;
-    if (/(giant|dragon|troll|demon|devil)/i.test(enemyName)) hp = 70;
-    else if (/(orc|hobgoblin|bugbear)/i.test(enemyName)) hp = 35;
-    else if (/(goblin|skeleton|kobold|zombie)/i.test(enemyName)) hp = 15;
-    spawnEnemy(enemyName, hp, []);
-  }
-  const dmgPats = [/you (?:take|suffer|receive|lose) (\d+) (?:points? of )?(?:damage|hp)/gi,/deals? (\d+) (?:points? of )?damage (?:to )?you/gi,/(?:strikes?|hits?) you for (\d+)/gi];
-  let dmgApplied = false;
-  for (const pat of dmgPats) { const ms = [...text.matchAll(pat)]; for (const m of ms) { const n = parseInt(m[1]); if (n > 0 && n < 500 && !dmgApplied) { adjustStat('hp', -n, true); adjustStat('stamina', -Math.floor(n * 0.4), true); showStatNotif('💔 -' + n + ' HP (' + vitals.hp + '/' + vitals.maxHp + ')', 'damage'); sfx_damage(); dmgApplied = true; } } }
-  const healPats = [/you (?:regain|restore|recover|heal|gain) (\d+) (?:hit points?|hp)/gi,/heals? you for (\d+)/gi,/\+(\d+) (?:hp|hit points?)/gi];
-  let healApplied = false;
-  for (const pat of healPats) { const ms = [...text.matchAll(pat)]; for (const m of ms) { const n = parseInt(m[1]); if (n > 0 && n < 500 && !healApplied) { adjustStat('hp', n, true); showStatNotif('💚 +' + n + ' HP (' + vitals.hp + '/' + vitals.maxHp + ')', 'heal'); sfx_heal(); healApplied = true; } } }
-  if (vitals.maxMana > 0) { const manaPats = [/expend (\d+) (?:mana|spell slot)/gi,/costs? (\d+) (?:mana|spell slot)/gi]; for (const pat of manaPats) { const ms = [...text.matchAll(pat)]; for (const m of ms) { const n = parseInt(m[1]); if (n > 0) { adjustStat('mana', -n * 10, true); showStatNotif('🔮 -' + (n * 10) + ' MANA', 'mana'); } } } }
-  if (currentEnemy) { const atkPats = [/you deal (\d+) (?:points? of )?damage/gi,/dealing (\d+) (?:points? of )?damage (?:to|against)/gi,/your (?:attack|strike|blow|spell|sword) (?:deals?|hits? for) (\d+)/gi]; for (const pat of atkPats) { const ms = [...text.matchAll(pat)]; for (const m of ms) { const n = parseInt(m[1]); if (n > 0) damageEnemy(n); } } }
-  if (currentEnemy) { const deathWords = ['falls dead','is slain','collapses','is defeated','breathes its last','dies','has fallen','is dead','is destroyed']; if (deathWords.some(w => t.includes(w))) damageEnemy(currentEnemy.hp); }
-  const goldPats = [/you (?:find|gain|receive|loot) (\d+) (?:gold|gp|coins?)/gi,/reward(?:ed)? (?:with )?(\d+) (?:gold|gp)/gi];
-  for (const pat of goldPats) { const ms = [...text.matchAll(pat)]; for (const m of ms) { const n = parseInt(m[1]); if (n > 0) { adjustGold(n); showStatNotif('🪙 +' + n + ' GP', 'heal'); } } }
-  if (/\b(?:long rest|you rest through|you sleep|dawn breaks|morning arrives)\b/i.test(text)) { const wasHp = vitals.hp; vitals.hp = vitals.maxHp; vitals.stamina = vitals.maxStamina; if (/long rest/i.test(text)) vitals.mana = vitals.maxMana; if (vitals.hp !== wasHp) { saveVitals(); renderVitals(); showStatNotif('✨ FULLY RESTED', 'heal'); sfx_heal(); } }
-  if (/(?:exhausted|fatigued|winded|out of breath)/i.test(text)) adjustStat('stamina', -Math.floor(5 + Math.random() * 10), true);
+  const t=text.toLowerCase();
+  const combatWords=['attack','battle','combat','fight','enemy','foe','goblin','orc','dragon','vampire','skeleton','zombie','bandit','wolf','bear','troll','giant','demon','devil','undead','creature','monster','ghoul','wight','wraith','spider','kobold','hobgoblin','bugbear'];
+  const hasCombat=combatWords.some(w=>t.includes(w));
+  if(hasCombat&&!currentEnemy){let enemyName='Enemy';const creatureNames=['Goblin','Orc','Dragon','Vampire','Skeleton','Zombie','Bandit','Wolf','Bear','Troll','Giant','Demon','Devil','Ghoul','Wight','Wraith','Spider','Kobold','Hobgoblin','Bugbear','Gnoll','Harpy'];for(const c of creatureNames){if(text.includes(c)){enemyName=c;break;}}const m=text.match(/(?:A |An |The )([A-Z][a-z]{2,20})\s+(?:appears?|emerges?|charges?|attacks?|lunges?|snarls?|stands?)/);if(m)enemyName=m[1];let hp=20;if(/(giant|dragon|troll|demon|devil)/i.test(enemyName))hp=70;else if(/(orc|hobgoblin|bugbear)/i.test(enemyName))hp=35;else if(/(goblin|skeleton|kobold|zombie)/i.test(enemyName))hp=15;spawnEnemy(enemyName,hp,[]);}
+  const dmgPats=[/you (?:take|suffer|receive|lose) (\d+) (?:points? of )?(?:damage|hp)/gi,/deals? (\d+) (?:points? of )?damage (?:to )?you/gi,/(?:strikes?|hits?) you for (\d+)/gi];let dmgApplied=false;for(const pat of dmgPats){const ms=[...text.matchAll(pat)];for(const m of ms){const n=parseInt(m[1]);if(n>0&&n<500&&!dmgApplied){adjustStat('hp',-n,true);adjustStat('stamina',-Math.floor(n*.4),true);showStatNotif('💔 -'+n+' HP ('+vitals.hp+'/'+vitals.maxHp+')','damage');sfx_damage();dmgApplied=true;}}}
+  const healPats=[/you (?:regain|restore|recover|heal|gain) (\d+) (?:hit points?|hp)/gi,/heals? you for (\d+)/gi,/\+(\d+) (?:hp|hit points?)/gi];let healApplied=false;for(const pat of healPats){const ms=[...text.matchAll(pat)];for(const m of ms){const n=parseInt(m[1]);if(n>0&&n<500&&!healApplied){adjustStat('hp',n,true);showStatNotif('💚 +'+n+' HP ('+vitals.hp+'/'+vitals.maxHp+')','heal');sfx_heal();healApplied=true;}}}
+  if(vitals.maxMana>0){const manaPats=[/expend (\d+) (?:mana|spell slot)/gi,/costs? (\d+) (?:mana|spell slot)/gi];for(const pat of manaPats){const ms=[...text.matchAll(pat)];for(const m of ms){const n=parseInt(m[1]);if(n>0){adjustStat('mana',-n*10,true);showStatNotif('🔮 -'+(n*10)+' MANA','mana');}}}}
+  if(currentEnemy){const atkPats=[/you deal (\d+) (?:points? of )?damage/gi,/dealing (\d+) (?:points? of )?damage (?:to|against)/gi,/your (?:attack|strike|blow|spell|sword) (?:deals?|hits? for) (\d+)/gi];for(const pat of atkPats){const ms=[...text.matchAll(pat)];for(const m of ms){const n=parseInt(m[1]);if(n>0)damageEnemy(n);}}}
+  if(currentEnemy){const deathWords=['falls dead','is slain','collapses','is defeated','breathes its last','dies','has fallen','is dead','is destroyed'];if(deathWords.some(w=>t.includes(w)))damageEnemy(currentEnemy.hp);}
+  const goldPats=[/you (?:find|gain|receive|loot) (\d+) (?:gold|gp|coins?)/gi,/reward(?:ed)? (?:with )?(\d+) (?:gold|gp)/gi];for(const pat of goldPats){const ms=[...text.matchAll(pat)];for(const m of ms){const n=parseInt(m[1]);if(n>0){adjustGold(n);showStatNotif('🪙 +'+n+' GP','heal');}}}
+  if(/\b(?:long rest|you rest through|you sleep|dawn breaks|morning arrives)\b/i.test(text)){const wasHp=vitals.hp;vitals.hp=vitals.maxHp;vitals.stamina=vitals.maxStamina;if(/long rest/i.test(text))vitals.mana=vitals.maxMana;if(vitals.hp!==wasHp){saveVitals();renderVitals();showStatNotif('✨ FULLY RESTED','heal');sfx_heal();}}
+  if(/(?:exhausted|fatigued|winded|out of breath)/i.test(text))adjustStat('stamina',-Math.floor(5+Math.random()*10),true);
   broadcastPartyUpdate();
 }
 
 /* ═══ API KEY ═══ */
-function activateKey() { const k = document.getElementById('kin').value.trim(), st = document.getElementById('kst'); if (!k.startsWith('gsk_')) { st.textContent = '✗ Keys must start with gsk_'; st.className = 'ks er'; return; } apiKey = k; localStorage.setItem('xai_gk', k); st.textContent = '✓ Oracle awakened!'; st.className = 'ks ok'; document.getElementById('fst').textContent = 'ORACLE AWAKE'; updateKeyStatusDisplay(); setTimeout(() => greetDM(), 700); }
-function updateKeyStatusDisplay() { const el = document.getElementById('key-status-display'), badge = document.getElementById('lore-key-badge'), kinEl = document.getElementById('kin'); if (!el) return; if (apiKey) { const masked = apiKey.substring(0, 8) + '••••••••••'; el.innerHTML = '<span style="color:var(--emerald-bright);">◆ ORACLE ACTIVE</span> · Key: <span style="color:var(--parch-faint);font-size:9px;">' + masked + '</span>'; if (badge) { badge.textContent = 'ACTIVE ◆'; badge.style.color = 'var(--emerald-bright)'; } if (kinEl) kinEl.placeholder = 'Key loaded — paste new key to update'; } else { el.innerHTML = '<span style="color:var(--blood-bright);">◇ ORACLE DORMANT</span> · Visit console.groq.com for a free key'; if (badge) { badge.textContent = 'NOT SET'; badge.style.color = 'var(--blood-bright)'; } } }
+function activateKey() { const k=document.getElementById('kin').value.trim(),st=document.getElementById('kst');if(!k.startsWith('gsk_')){st.textContent='✗ Keys must start with gsk_';st.className='ks er';return;}apiKey=k;localStorage.setItem('xai_gk',k);st.textContent='✓ Oracle awakened!';st.className='ks ok';document.getElementById('fst').textContent='ORACLE AWAKE';updateKeyStatusDisplay();setTimeout(()=>greetDM(),700); }
+function updateKeyStatusDisplay() { const el=document.getElementById('key-status-display'),badge=document.getElementById('lore-key-badge'),kinEl=document.getElementById('kin');if(!el)return;if(apiKey){const masked=apiKey.substring(0,8)+'••••••••••';el.innerHTML='<span style="color:var(--emerald-bright);">◆ ORACLE ACTIVE</span> · Key: <span style="color:var(--parch-faint);font-size:9px;">'+masked+'</span>';if(badge){badge.textContent='ACTIVE ◆';badge.style.color='var(--emerald-bright)';}if(kinEl)kinEl.placeholder='Key loaded — paste new key to update';}else{el.innerHTML='<span style="color:var(--blood-bright);">◇ ORACLE DORMANT</span> · Visit console.groq.com for a free key';if(badge){badge.textContent='NOT SET';badge.style.color='var(--blood-bright)';}}}
 
 /* ═══ RENDER DM PANELS ═══ */
-function renderDMPanels() { renderDMVitals(); renderDMEquipped(); renderDMInventory(); const n = localStorage.getItem('dm_char_name') || '—'; const el = document.getElementById('dm-char-name-display'); if (el) el.textContent = n; const goldEl = document.getElementById('dm-gold-display'); if (goldEl) goldEl.textContent = gold + ' GP'; }
-function renderDMVitals() { const hasMana = vitals.maxMana > 0; const setV = (id, cur, max) => { const pct = max > 0 ? Math.max(0, Math.min(100, cur / max * 100)) : 0; const val = document.getElementById('dm-' + id + '-val'), bar = document.getElementById('dm-' + id + '-bar'); if (val) val.textContent = cur + '/' + max; if (bar) bar.style.width = pct + '%'; }; setV('hp', vitals.hp, vitals.maxHp); setV('st', vitals.stamina, vitals.maxStamina); setV('mp', vitals.mana, vitals.maxMana); setV('status', vitals.status, vitals.maxStatus); const mr = document.getElementById('dm-mana-row-sm'); if (mr) mr.style.display = hasMana ? 'flex' : 'none'; }
-function renderDMEquipped() { const slots = [{ key: 'mainhand', id: 'dm-eq-mh-name' }, { key: 'offhand', id: 'dm-eq-oh-name' }, { key: 'armor', id: 'dm-eq-ar-name' }, { key: 'head', id: 'dm-eq-hd-name' }, { key: 'accessory', id: 'dm-eq-ac-name' }]; slots.forEach(s => { const el = document.getElementById(s.id); if (!el) return; if (equipped[s.key]) { const item = inventory.find(i => i.instanceId?.toString() === equipped[s.key]?.toString()); if (item) { el.textContent = (item.icon || '') + (item.name || '?'); el.className = 'equip-item-name-sm'; } else { el.textContent = 'None'; el.className = 'equip-item-name-sm empty'; } } else { el.textContent = 'None'; el.className = 'equip-item-name-sm empty'; } }); }
-function renderDMInventory() { const list = document.getElementById('dm-inventory-list'), cnt = document.getElementById('dm-inv-count'); if (!list) return; if (cnt) cnt.textContent = inventory.length + '/20'; if (inventory.length === 0) { list.innerHTML = '<div style="font-family:\'IM Fell English\',serif;font-style:italic;font-size:10px;color:var(--parch-faint);text-align:center;padding:10px 0;">Pack empty</div>'; return; } list.innerHTML = inventory.map((item, idx) => { const isEq = Object.values(equipped).some(e => e?.toString() === item.instanceId?.toString()); return `<div class="inv-slot-sm${isEq ? ' equipped' : ''}" onclick="openItemFromBag(${idx})"><span style="font-size:12px;">${item.icon || '📦'}</span><span class="inv-name-sm" style="${isEq ? 'color:var(--gold);' : ''}">${item.name}</span>${isEq ? '<span style="font-size:7px;color:var(--emerald-bright);">EQ</span>' : ''}</div>`; }).join(''); }
+function renderDMPanels() { renderDMVitals(); renderDMEquipped(); renderDMInventory(); const n=localStorage.getItem('dm_char_name')||'—';const el=document.getElementById('dm-char-name-display');if(el)el.textContent=n;const goldEl=document.getElementById('dm-gold-display');if(goldEl)goldEl.textContent=gold+' GP'; }
+function renderDMVitals() { const hasMana=vitals.maxMana>0;const setV=(id,cur,max)=>{const pct=max>0?Math.max(0,Math.min(100,cur/max*100)):0;const val=document.getElementById('dm-'+id+'-val'),bar=document.getElementById('dm-'+id+'-bar');if(val)val.textContent=cur+'/'+max;if(bar)bar.style.width=pct+'%';};setV('hp',vitals.hp,vitals.maxHp);setV('st',vitals.stamina,vitals.maxStamina);setV('mp',vitals.mana,vitals.maxMana);setV('status',vitals.status,vitals.maxStatus);const mr=document.getElementById('dm-mana-row-sm');if(mr)mr.style.display=hasMana?'flex':'none'; }
+function renderDMEquipped() { const slots=[{key:'mainhand',id:'dm-eq-mh-name'},{key:'offhand',id:'dm-eq-oh-name'},{key:'armor',id:'dm-eq-ar-name'},{key:'head',id:'dm-eq-hd-name'},{key:'accessory',id:'dm-eq-ac-name'}];slots.forEach(s=>{const el=document.getElementById(s.id);if(!el)return;if(equipped[s.key]){const item=inventory.find(i=>i.instanceId?.toString()===equipped[s.key]?.toString());if(item){el.textContent=(item.icon||'')+(item.name||'?');el.className='equip-item-name-sm';}else{el.textContent='None';el.className='equip-item-name-sm empty';}}else{el.textContent='None';el.className='equip-item-name-sm empty';}}); }
+function renderDMInventory() { const list=document.getElementById('dm-inventory-list'),cnt=document.getElementById('dm-inv-count');if(!list)return;if(cnt)cnt.textContent=inventory.length+'/20';if(inventory.length===0){list.innerHTML='<div style="font-family:\'IM Fell English\',serif;font-style:italic;font-size:10px;color:var(--parch-faint);text-align:center;padding:10px 0;">Pack empty</div>';return;}list.innerHTML=inventory.map((item,idx)=>{const isEq=Object.values(equipped).some(e=>e?.toString()===item.instanceId?.toString());return `<div class="inv-slot-sm${isEq?' equipped':''}" onclick="openItemFromBag(${idx})"><span style="font-size:12px;">${item.icon||'📦'}</span><span class="inv-name-sm" style="${isEq?'color:var(--gold);':''}">${item.name}</span>${isEq?'<span style="font-size:7px;color:var(--emerald-bright);">EQ</span>':''}</div>`;}).join(''); }
 
 /* ═══ DM DICE ═══ */
 function dmRollDie(sides) { sfx_roll(); const result = Math.floor(Math.random() * sides) + 1; const el = document.getElementById('dm-dice-result'); if (!el) return; let flavor = '', color = 'var(--gold)'; if (result === sides) { flavor = '⭐ MAXIMUM!'; color = 'var(--gold-bright)'; sfx_critical(); } else if (result === 1 && sides === 20) { flavor = '💀 CRITICAL FAIL'; color = 'var(--blood-bright)'; sfx_fail(); } else if (result >= Math.ceil(sides * .8)) flavor = '✨ Excellent!'; else if (result <= Math.ceil(sides * .2)) flavor = '😬 Bad luck...'; else flavor = '🎲 Roll result'; el.innerHTML = `<div class="dm-dice-num" style="color:${color};">${result}</div><div class="dm-dice-sub">d${sides}</div><div class="dm-dice-flavor">${flavor}</div>`; }
