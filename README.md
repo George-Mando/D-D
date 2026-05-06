@@ -1,7 +1,7 @@
-<div align="center">
+<!--<div align="center">
 
 <!-- ANIMATED WAVE HEADER -->
-<!-- <img width="100%" src="https://capsule-render.vercel.app/api?type=waving&color=0:0a0608,50:c9a84c,100:0a0608&height=200&section=header&text=DUNGEON%20MASTER%20AI&fontSize=52&fontColor=c9a84c&fontAlignY=38&desc=XenClipse%20Studios%20%7C%20George%20Carter%20%7C%20D%26D%205e%20AI%20Oracle&descAlignY=58&descSize=16&animation=fadeIn" /> -->
+<img width="100%" src="https://capsule-render.vercel.app/api?type=waving&color=0:0a0608,50:c9a84c,100:0a0608&height=200&section=header&text=DUNGEON%20MASTER%20AI&fontSize=52&fontColor=c9a84c&fontAlignY=38&desc=XenClipse%20Studios%20%7C%20George%20Carter%20%7C%20D%26D%205e%20AI%20Oracle&descAlignY=58&descSize=16&animation=fadeIn" />
 
 <br/>
 
