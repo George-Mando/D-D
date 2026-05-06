@@ -4,7 +4,11 @@
 <img width="100%" src="https://capsule-render.vercel.app/api?type=waving&color=0:0a0608,50:c9a84c,100:0a0608&height=200&section=header&text=DUNGEON%20MASTER%20AI&fontSize=52&fontColor=c9a84c&fontAlignY=38&desc=XenClipse%20Studios%20%7C%20George%20Carter%20%7C%20D%26D%205e%20AI%20Oracle&descAlignY=58&descSize=16&animation=fadeIn" />
 
 <!-- ANIMATED TYPING SVG -->
-[![Typing SVG](https://readme-typing-svg.demolab.com?font=Cinzel&weight=700&size=20&duration=3000&pause=800&color=C9A84C&center=true&vCenter=true&width=700&lines=%F0%9F%8E%B2+AI+Dungeon+Master+Powered+by+Groq;%E2%9A%94%EF%B8%8F+D%26D+First+Edition+Full+Rules+Support;%F0%9F%90%89+Three+Epic+Campaigns+Ready+to+Play;%F0%9F%8F%B0+Character+Creator+%2B+Dice+Vault+Included;%F0%9F%94%AE+The+Oracle+Speaks+—+Your+Story+Awaits)](https://git.io/typing-svg)
+
+<p align="center">
+  <img src="https://capsule-render.vercel.app/api?type=waving&color=0:0a0608,50:c9a84c,100:0a0608&height=200&section=header&text=DUNGEON%20MASTER%20AI&fontSize=52&fontColor=c9a84c&fontAlignY=38&desc=XenClipse%20Studios%20%7C%20George%20Carter%20%7C%20D%26D%205e%20AI%20Oracle&descAlignY=58&descSize=16&animation=fadeIn" />
+</p>
+
 
 <br/>
 
