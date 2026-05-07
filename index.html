@@ -1339,15 +1339,8 @@ body::after{ content:''; position:fixed; inset : 0; background:radial - gradient
                             /* ★ STORY SYNC — non-host players receive and display the same story ★ */
                             if (payload.from != = myPartyName) {
                                 const tag = `<span class = "story-sync-tag" > 📡 ${ payload.from }< / span>`;
-                                    addMsg('ai', tag + payload.dmText);
+                                addMsg('ai', tag + payload.dmText);
                                 speak(payload.dmText);
-                                /* Show sync confirmed badge */
-                                const badge = document.getElementById('party-sync-badge');
-                                badge.textContent = '✓ STORY SYNCED from ' + payload.from;
-                                badge.style.opacity = '1';
-                                clearTimeout(badge._t);
-                                badge._t = setTimeout(() = > { badge.style.opacity = '0'; }, 4000);
-                                sfx_levelup();
                                 autoSFXFromText(payload.dmText);
                                 parseAndApplyStatChanges(payload.dmText);
                                 detectCombatFromText(payload.dmText);
