@@ -1,26 +1,16 @@
 {
-  "name": "DUNGEON MASTER ORACLE · GEORGE CARTER",
-  "short_name": "DMO",
-  "description": "XenClipse Studios — George Carter Dungeon Master Oracle",
+  "name": "Dungeon Master AI · XenClipse Studios",
+  "short_name": "DM Oracle",
+  "description": "AI-powered D&D Dungeon Master with multiplayer party system",
   "start_url": "./index.html",
   "display": "standalone",
-  "background_color": "#000600",
-  "theme_color": "#000600",
+  "background_color": "#0a0608",
+  "theme_color": "#0a0608",
   "orientation": "portrait-primary",
   "icons": [
-    {
-      "src": "icon-192.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any maskable"
-    },
-    {
-      "src": "icon-512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any maskable"
-    }
+    {"src": "icon-192.png","sizes":"192x192","type":"image/png","purpose":"any maskable"},
+    {"src": "icon-512.png","sizes":"512x512","type":"image/png","purpose":"any maskable"}
   ],
-  "categories": ["portfolio", "utilities"],
+  "categories": ["games","entertainment"],
   "screenshots": []
 }
