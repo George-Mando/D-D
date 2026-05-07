@@ -6,13 +6,11 @@
 <meta name = "apple-mobile-web-app-capable" content = "yes" / >
 <meta name = "apple-mobile-web-app-status-bar-style" content = "black-translucent" / >
 <meta name = "theme-color" content = "#0a0608" / >
-<link rel = "manifest" href = "./manifest.json" / >
+<link rel = "manifest" href = "./manifest.json" / > 
 <script>
 if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () = > {
-        navigator.serviceWorker.register('./sw.js')
-            .then(() = > console.log('DM Oracle: PWA ready!'))
-            .catch (e = > console.log('SW error:', e));
+    window.addEventListener('load', function(){
+        navigator.serviceWorker.register('./sw.js');
     });
 }
 < / script>
@@ -1938,7 +1936,169 @@ function greetDM() {
             if (kinEl) kinEl.placeholder = 'Key loaded — paste new key to update';
         }
     });
-    
+
+    /* ═══════════════════════════════════════════════════════
+     DM Oracle Story Sync Patch v4.5.1
+     Add this file to your project and add to index.html:
+     <script src="./patch-story-sync.js"></script>
+     Place this AFTER the closing </script> tag of the main script.
+  ═══════════════════════════════════════════════════════ */
+
+    (function() {
+        'use strict';
+
+        /* Wait for page to be ready */
+        function applyPatch() {
+
+            /* ── PATCH 1: Override send() to broadcast story ── */
+            const originalSend = window.send;
+            if (!originalSend) {
+                console.warn('DM Patch: send() not found, retrying...');
+                setTimeout(applyPatch, 500);
+                return;
+            }
+
+            window.send = async function() {
+                const inp = document.getElementById('cin'), btn = document.getElementById('sbtn');
+                const txt = inp ? inp.value.trim() : '';
+                if (!txt) return;
+
+                const apiKey = localStorage.getItem('xai_gk') || '';
+                if (!apiKey) {
+                    addMsg('ai', '*The Oracle remains silent...* Please go to the <strong>LORE</strong> tab and enter your Groq API key.');
+                    return;
+                }
+
+                addMsg('usr', txt);
+                inp.value = '';
+                btn.disabled = true;
+
+                const campaign = localStorage.getItem('dm_campaign') || '',
+                    character = localStorage.getItem('dm_character') || '';
+                let contextMsg = txt;
+                const members = Object.values(window.partyMembers || {});
+                if (window.partyCode && members.length > 1) {
+                    const pd = members.map(m = > m.name + ' (' + (m.class || '?') + ', HP:' + m.hp + '/' + m.maxHp + ')').join(', ');
+                    if (window.dmHist.length == = 0) contextMsg = '[CAMPAIGN: ' + (campaign || 'Open World') + '] [CHARACTER: ' + (character || 'Unknown') + '] [PARTY: ' + pd + '] ' + txt;
+                }
+                else if (window.dmHist.length == = 0 && (campaign || character)) {
+                    contextMsg = '[CAMPAIGN: ' + (campaign || 'Open World') + '] [CHARACTER: ' + (character || 'Unknown') + '] ' + txt;
+                }
+                contextMsg += ' [STATS: HP ' + window.vitals.hp + '/' + window.vitals.maxHp + ', Stamina ' + window.vitals.stamina + '/' + window.vitals.maxStamina + (window.vitals.maxMana > 0 ? ', Mana ' + window.vitals.mana + '/' + window.vitals.maxMana : '') + ']';
+                window.dmHist.push({ role: 'user', content : contextMsg });
+
+                const th = addMsg('ai', '<em>*The Oracle consults the ancient tomes...*</em>');
+                th.classList.add('thnk');
+
+                const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
+                const GROQ_MDL = 'llama-3.3-70b-versatile';
+                const DM_SYSTEM = `You are the Dungeon Master Oracle — a master storyteller running D & D 5th Edition.
+
+                    CRITICAL STAT PHRASES :
+                -Damage : "you take X damage" or "you suffer X points of damage"
+                    - Heal : "you regain X hit points"
+                    - Enemy appears : "A Goblin appears" / "An Orc charges toward you"
+                    - Player hits : "you deal X damage to the [enemy]"
+                    - Enemy dies : "the [enemy] falls dead" or "is slain"
+                    - Gold : "you find X gold pieces"
+                    - Rest : "long rest" or "short rest"
+
+                    COMBAT : Turn - based.Request dice rolls — "Roll a d20 to attack", "Make a DC 15 save".
+                    FORMAT : 3 - 5 sentences second person.End with player choice or roll request.
+                    MULTIPLAYER : Address each party member by name.`;
+
+                    try {
+                    const res = await fetch(GROQ_URL, {
+                      method: 'POST',
+                      headers : { 'Content-Type': 'application/json', 'Authorization' : 'Bearer ' + apiKey },
+                      body : JSON.stringify({
+                        model: GROQ_MDL, max_tokens : 500, temperature : 0.85,
+                        messages : [{ role: 'system', content : DM_SYSTEM }, ...window.dmHist]
+                      })
+                        });
+                    const data = await res.json();
+                    th.remove();
+                    if (data.error) {
+                        addMsg('ai', '*The oracle falters...* Error: ' + data.error.message);
+                        window.dmHist.pop();
+                    }
+                    else {
+                        const r = data.choices[0].message.content;
+                        window.dmHist.push({ role: 'assistant', content : r });
+                        addMsg('ai', r);
+                        try { window.speak(r); }
+                        catch (e) {}
+                        try { window.autoSFXFromText(r); }
+                        catch (e) {}
+                        try { window.parseAndApplyStatChanges(r); }
+                        catch (e) {}
+
+                        /* ★★★ THE FIX: Broadcast DM story to ALL party members ★★★ */
+                        try { window.broadcastStory(r); }
+                        catch (e) { console.error('broadcastStory error:', e); }
+
+                        try { window.autoSave(); }
+                        catch (e) {}
+                        try { window.broadcastPartyUpdate(); }
+                        catch (e) {}
+                    }
+                }
+                catch (e) {
+                    th.remove();
+                    addMsg('ai', '*The scrying pool goes dark...* Connection failed. Check API key.');
+                    window.dmHist.pop();
+                }
+                btn.disabled = false;
+            };
+
+            /* ── PATCH 2: Override story receive to show sync badge ── */
+            const originalHandleMqtt = window.handleMqttMessage;
+            window.handleMqttMessage = function(topic, payload) {
+                const msgType = topic.split('/')[2];
+                if (msgType == = 'story' && payload.from != = window.myPartyName) {
+                    /* Show story with sync tag */
+                    const tag = '<span class="story-sync-tag">📡 LIVE</span> ';
+                    addMsg('ai', tag + payload.dmText);
+                    try { window.speak(payload.dmText); }
+                    catch (e) {}
+                    try { window.autoSFXFromText(payload.dmText); }
+                    catch (e) {}
+                    try { window.parseAndApplyStatChanges(payload.dmText); }
+                    catch (e) {}
+                    try { window.detectCombatFromText(payload.dmText); }
+                    catch (e) {}
+                    /* Flash green sync badge */
+                    const badge = document.getElementById('party-sync-badge');
+                    if (badge) {
+                        badge.textContent = '✓ STORY SYNCED from ' + payload.from;
+                        badge.style.opacity = '1';
+                        clearTimeout(badge._t);
+                        badge._t = setTimeout(function() { badge.style.opacity = '0'; }, 4000);
+                    }
+                    try { window.sfx_levelup(); }
+                    catch (e) {}
+                    return; /* handled */
+                }
+                /* All other message types pass through to original handler */
+                if (originalHandleMqtt) originalHandleMqtt.call(this, topic, payload);
+            };
+
+            console.log('%c✓ DM Oracle Story Sync Patch Applied!', 'color:#2db360;font-size:14px;font-weight:bold;');
+            console.log('  broadcastStory() will now fire after every AI response.');
+            console.log('  All party members will receive the same DM narration live.');
+        }
+
+        /* Apply after DOM + scripts load */
+        if (document.readyState == = 'complete') {
+            applyPatch();
+        }
+        else {
+            window.addEventListener('load', applyPatch);
+        }
+
+    })();
+
     < / script>
+        <script src = "./patch-story-sync.js">< / script>
         < / body>
         < / html>
