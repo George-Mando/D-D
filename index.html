@@ -2121,11 +2121,83 @@ function greetDM() {
     sendToDM(greeting, true);
 }
 
-async function send() { const inp = document.getElementById('cin'), btn = document.getElementById('sbtn'); const txt = inp.value.trim(); if (!txt) return; if (!apiKey) { addMsg('ai', '*The Oracle remains silent...* Please go to the <strong>LORE</strong> tab and enter your Groq API key.'); return; } addMsg('usr', txt); inp.value = ''; btn.disabled = true; const campaign = localStorage.getItem('dm_campaign') || '', character = localStorage.getItem('dm_character') || ''; let contextMsg = txt; const members = Object.values(partyMembers); if (partyCode && members.length > 1) { const pd = members.map(m = > `${m.name } (${ m.class || '?' }, HP:${ m.hp } / ${ m.maxHp })`).join(', '); if (dmHist.length == = 0) contextMsg = `[CAMPAIGN: ${ campaign || 'Open World' }][CHARACTER:${ character || 'Unknown' }][PARTY:${ pd }] ${ txt }`; }
-    else if (dmHist.length == = 0 && (campaign || character)) { contextMsg = `[CAMPAIGN: ${ campaign || 'Open World' }][CHARACTER:${ character || 'Unknown' }] ${ txt }`; } contextMsg += `[STATS:HP ${ vitals.hp } / ${ vitals.maxHp }, Stamina ${ vitals.stamina } / ${ vitals.maxStamina }${ vitals.maxMana > 0 ? ', Mana ' + vitals.mana + '/' + vitals.maxMana : '' }]`; dmHist.push({ role: 'user', content : contextMsg }); const th = addMsg('ai', '<em>*The Oracle consults the ancient tomes...*</em>'); th.classList.add('thnk'); try { const res = await fetch(GROQ_URL, { method: 'POST', headers : { 'Content-Type': 'application/json', 'Authorization' : 'Bearer ' + apiKey }, body : JSON.stringify({ model: GROQ_MDL, max_tokens : 500, temperature : 0.85, messages : [{ role: 'system', content : DM_SYSTEM }, ...dmHist] }) }); const d = await res.json(); th.remove(); if (d.error) { addMsg('ai', '*The oracle falters...* Error: ' + d.error.message); dmHist.pop(); } else { const r = d.choices[0].message.content; dmHist.push({ role: 'assistant', content : r }); addMsg('ai', r); speak(r); autoSFXFromText(r); parseAndApplyStatChanges(r); autoSave(); broadcastPartyUpdate(); } }
-    catch (e) { th.remove(); addMsg('ai', '*The scrying pool goes dark...* Connection failed. Check your API key on the LORE tab.'); dmHist.pop(); } btn.disabled = false;
+async function sendToDM(userMsg, isSystem = false) {
+    if (!apiKey) {
+        addMsg('ai', '*The Oracle slumbers... Enter your Groq API key on the <strong>LORE</strong> tab to awaken it. Visit console.groq.com — free, no credit card required.*');
+        return;
     }
-    function ask(btn) { document.getElementById('cin').value = btn.textContent; send(); }
+    if (isStreaming) return;
+    isStreaming = true;
+
+    const btn = document.getElementById('sbtn');
+    if (btn) { btn.disabled = true; btn.textContent = '⏳'; }
+    document.getElementById('fst').textContent = 'THINKING ◆';
+
+    if (!isSystem) {
+        dmHist.push({ role: 'user', content : userMsg });
+    }
+
+    const messages = isSystem
+        ? [{ role: 'user', content : userMsg }]
+        : dmHist.slice(-20);
+
+    try {
+        const resp = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+          method: 'POST',
+          headers : {
+            'Content-Type': 'application/json',
+            'Authorization' : 'Bearer ' + apiKey
+          },
+          body : JSON.stringify({
+            model: 'llama-3.3-70b-versatile',
+            messages : [
+              { role: 'system', content : DM_SYSTEM },
+              ...messages
+            ] ,
+            max_tokens : 600,
+            temperature : 0.85
+          })
+            });
+
+        if (!resp.ok) {
+            const errData = await resp.json().catch (() = > ({}));
+            const errMsg = errData ? .error ? .message || resp.statusText || 'Unknown error';
+            addMsg('ai', `*⚠️ Oracle Error : ${ errMsg }. Check your Groq API key on the LORE tab.*`);
+            document.getElementById('fst').textContent = 'ERROR';
+            isStreaming = false;
+            if (btn) { btn.disabled = false; btn.textContent = '⚔️ SEND'; }
+            return;
+        }
+
+        const data = await resp.json();
+        const dmText = data.choices ? .[0] ? .message ? .content || '*The Oracle speaks in silence...*';
+
+        if (!isSystem) {
+            dmHist.push({ role: 'assistant', content : dmText });
+        }
+
+        addMsg('ai', dmText);
+        speak(dmText);
+        autoSFXFromText(dmText);
+        parseAndApplyStatChanges(dmText, true);
+
+        // ★ Broadcast SAME story to ALL party members simultaneously
+        if (!isSystem && partyCode) {
+            broadcastStory(userMsg, dmText);
+        }
+
+        document.getElementById('fst').textContent = apiKey ? 'ORACLE AWAKE' : 'DORMANT';
+        autoSave();
+
+    }
+    catch (e) {
+        addMsg('ai', `*⚠️ Connection failed : ${ e.message }. Check your internet connection and API key.*`);
+        document.getElementById('fst').textContent = 'ERROR';
+    }
+
+    isStreaming = false;
+    if (btn) { btn.disabled = false; btn.textContent = '⚔️ SEND'; }
+}
 
 function addMsg(type, html) {
     const box = document.getElementById('cmsgs');
