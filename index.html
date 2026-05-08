@@ -1770,7 +1770,67 @@ function parseAndApplyStatChanges(text) {
 }
 
 /* ═══ API KEY ═══ */
-function activateKey() { const k = document.getElementById('kin').value.trim(), st = document.getElementById('kst'); if (!k.startsWith('gsk_')) { st.textContent = '✗ Keys must start with gsk_'; st.className = 'ks er'; return; }apiKey = k; localStorage.setItem('xai_gk', k); st.textContent = '✓ Oracle awakened!'; st.className = 'ks ok'; document.getElementById('fst').textContent = 'ORACLE AWAKE'; updateKeyStatusDisplay(); setTimeout(() = > greetDM(), 700); }
+
+function activateKey() {
+    const k = document.getElementById('kin').value.trim();
+    const st = document.getElementById('kst');
+
+    if (!k) {
+        st.textContent = '✗ Please paste your Groq API key first';
+        st.className = 'ks er';
+        return;
+    }
+    if (!k.startsWith('gsk_')) {
+        st.textContent = '✗ Keys must start with gsk_ — check you copied the full key from console.groq.com';
+        st.className = 'ks er';
+        return;
+    }
+
+    st.textContent = '⏳ Testing key against Groq servers...';
+    st.className = 'ks';
+
+    fetch('https://api.groq.com/openai/v1/models', {
+      headers: { 'Authorization': 'Bearer ' + k }
+        })
+        .then(r = > {
+        if (r.ok) {
+            apiKey = k;
+            localStorage.setItem('xai_gk', k);
+            st.textContent = '✓ Oracle awakened! Key is valid and working.';
+            st.className = 'ks ok';
+            document.getElementById('fst').textContent = 'ORACLE AWAKE';
+            updateKeyStatusDisplay();
+            /* Auto-greet if on DM screen */
+            if (document.getElementById('screen-dm').classList.contains('active')) {
+                setTimeout(() = > greetDM(), 500);
+            }
+        }
+        else {
+            r.json().then(e = > {
+                const msg = e ? .error ? .message || ('Status ' + r.status);
+                if (r.status == = 401) {
+                    st.textContent = '✗ Invalid key: ' + msg + ' — generate a new key at console.groq.com';
+                }
+                else {
+                    st.textContent = '✗ Key rejected: ' + msg;
+                }
+                st.className = 'ks er';
+            }).catch (() = > {
+                st.textContent = '✗ Key rejected (status ' + r.status + ') — try a new key';
+                st.className = 'ks er';
+            });
+        }
+    })
+        .catch (err = > {
+        /* Network error — save key anyway, might just be a CORS preflight issue */
+        apiKey = k;
+        localStorage.setItem('xai_gk', k);
+        st.textContent = '⚠ Could not verify (network: ' + err.message + ') — key saved, try sending a message to test.';
+        st.className = 'ks ok';
+        document.getElementById('fst').textContent = 'ORACLE AWAKE';
+        updateKeyStatusDisplay();
+    });
+}
 function updateKeyStatusDisplay() { const el = document.getElementById('key-status-display'), badge = document.getElementById('lore-key-badge'), kinEl = document.getElementById('kin'); if (!el)return; if (apiKey) { const masked = apiKey.substring(0, 8) + '••••••••••'; el.innerHTML = '<span style="color:var(--emerald-bright);">◆ ORACLE ACTIVE</span> · Key: <span style="color:var(--parch-faint);font-size:7px;">' + masked + '</span>'; if (badge) { badge.textContent = 'ACTIVE ◆'; badge.style.color = 'var(--emerald-bright)'; }if (kinEl)kinEl.placeholder = 'Key loaded — paste new key to update'; } else { el.innerHTML = '<span style="color:var(--blood-bright);">◇ ORACLE DORMANT</span> · Visit console.groq.com for a free key'; if (badge) { badge.textContent = 'NOT SET'; badge.style.color = 'var(--blood-bright)'; } } }
 
 /* ═══ RENDER DM PANELS ═══ */
