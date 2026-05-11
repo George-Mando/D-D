@@ -686,10 +686,16 @@ body::after{content:'';position:fixed;inset:0;background:radial-gradient(ellipse
           <div class="voice-bars" id="vbars"><div class="vb" id="v0"></div><div class="vb" id="v1"></div><div class="vb" id="v2"></div><div class="vb" id="v3"></div><div class="vb" id="v4"></div><div class="vb" id="v5"></div><div class="vb" id="v6"></div><div class="vb" id="v7"></div><div class="vb" id="v8"></div></div>
           <div style="width:100%;padding:0 4px;"><select class="voice-sel" id="voice-selector" onchange="onVoiceChange()"><option value="male">🎭 Male Voice</option><option value="female">🧙 Female Voice</option></select></div>
           <div class="oracle-controls">
-            <button class="oc-btn" id="sfx-toggle-btn" onclick="toggleSfxMasterDM()">🔊</button>
-            <button class="oc-btn" id="voice-toggle-btn" onclick="toggleVoice()">🎙</button>
-            <button class="oc-btn" onclick="openSaveConfirm()">💾</button>
-          </div>
+  <button class="oc-btn" onclick="autoSave()">⚡AUTO</button>
+  <button class="oc-btn" onclick="openPartyModal()">👥</button>
+  <button class="oc-btn" style="font-size:5px;" onclick="showScreen('lore',document.querySelectorAll('.nav-tab')[6])">🔑KEY</button>
+</div>
+<div class="oracle-controls">
+  <button class="oc-btn" id="sync-voice-btn" onclick="unlockVoiceManually()" 
+    style="font-size:6px;letter-spacing:0;width:100%;border-color:var(--blood-bright);color:var(--blood-bright);">
+    🔊 TAP TO SYNC VOICE
+  </button>
+</div>
           <div class="oracle-controls">
             <button class="oc-btn" onclick="autoSave()">⚡AUTO</button>
             <button class="oc-btn" onclick="openPartyModal()">👥</button>
@@ -1254,12 +1260,12 @@ function generateCode() {
 }
 
 function createParty() {
-  // ★ UNLOCK SPEECH ON CREATE — this tap gesture unlocks audio for the whole session
+  // ★ UNLOCK SPEECH + AUDIO on this tap gesture
   if (window.speechSynthesis) {
-    const unlock = new SpeechSynthesisUtterance('');
-    unlock.volume = 0;
+    const unlock = new SpeechSynthesisUtterance('The Oracle awakens.');
+    unlock.volume = 0.01;
     window.speechSynthesis.speak(unlock);
-    window.speechSynthesis.cancel();
+    setTimeout(() => window.speechSynthesis.cancel(), 500);
   }
   if (AudioCtx) {
     try {
@@ -1268,6 +1274,7 @@ function createParty() {
     } catch(e) {}
   }
   window.speechUnlocked = true;
+  showSfxInd('🔊 VOICE UNLOCKED — STORY SYNC READY');
   const nameEl = document.getElementById('host-name-input');
   myPartyName = nameEl.value.trim() || localStorage.getItem('dm_char_name') || 'Host';
   const btn = document.getElementById('create-party-btn');
@@ -1302,12 +1309,12 @@ function updateHostMemberList() {
 }
 
 function joinParty() {
-  // ★ UNLOCK SPEECH ON JOIN — this tap gesture unlocks audio for the whole session
+  // ★ UNLOCK SPEECH + AUDIO on this tap gesture
   if (window.speechSynthesis) {
-    const unlock = new SpeechSynthesisUtterance('');
-    unlock.volume = 0;
+    const unlock = new SpeechSynthesisUtterance('The Oracle awakens.');
+    unlock.volume = 0.01;
     window.speechSynthesis.speak(unlock);
-    window.speechSynthesis.cancel();
+    setTimeout(() => window.speechSynthesis.cancel(), 500);
   }
   if (AudioCtx) {
     try {
@@ -1316,6 +1323,7 @@ function joinParty() {
     } catch(e) {}
   }
   window.speechUnlocked = true;
+  showSfxInd('🔊 VOICE UNLOCKED — STORY SYNC READY');
   const nameEl = document.getElementById('join-name-input'), codeEl = document.getElementById('join-code-input'),
         statusEl = document.getElementById('join-status'), btn = document.getElementById('join-party-btn');
   myPartyName = nameEl.value.trim() || localStorage.getItem('dm_char_name') || 'Adventurer';
@@ -1390,6 +1398,39 @@ function switchPartyTab(name) {
   document.querySelectorAll('.party-tab-btn').forEach((b,i) => b.classList.toggle('active',['host','join','current'][i]===name));
   document.querySelectorAll('.party-tab').forEach((t,i) => t.classList.toggle('active',['ptab-host','ptab-join','ptab-current'][i]==='ptab-'+name));
   if (name==='current') updatePartyTab();
+}
+
+function unlockVoiceManually() {
+  // This button gives a fresh user gesture to unlock speech on any device
+  if (window.speechSynthesis) {
+    const unlock = new SpeechSynthesisUtterance('Voice synchronized.');
+    unlock.volume = 0.01;
+    unlock.onend = () => {
+      window.speechSynthesis.cancel();
+      window.speechUnlocked = true;
+      const btn = document.getElementById('sync-voice-btn');
+      if (btn) {
+        btn.textContent = '🔊 VOICE SYNCED ✓';
+        btn.style.borderColor = 'var(--emerald-bright)';
+        btn.style.color = 'var(--emerald-bright)';
+      }
+      showSfxInd('✓ VOICE SYNCED — STORY WILL PLAY');
+      // Play any pending speech that was queued
+      if (window._pendingSpeech) {
+        speak(window._pendingSpeech);
+        window._pendingSpeech = null;
+      }
+    };
+    window.speechSynthesis.speak(unlock);
+  }
+  if (AudioCtx) {
+    try {
+      if (!audioCtx) audioCtx = new AudioCtx();
+      audioCtx.resume();
+    } catch(e) {}
+  }
+  window.speechUnlocked = true;
+  requestWakeLock();
 }
 
 /* ═══════════════════════════════════════════════════════
