@@ -1069,64 +1069,15 @@ function handleMqttMessage(topic, payload) {
     }
   }
   else if (msgType === 'story') {
-    /* ★★★ CORE FIX: All party members receive and display the SAME DM story ★★★
-       When any player triggers a DM response, it's broadcast here.
-       Non-sending players receive it and display it as if they heard it directly. */
-    if (payload.from !== myPartyName) {
-      // Show the player's action first
-      if (payload.playerAction) {
-        addMsg('usr', `[${payload.from}]: ${payload.playerAction}`);
-      }
-      // Then show the DM response — same as what the sending player sees
-      const syncLabel = `<span style="font-family:'Share Tech Mono',monospace;font-size:7px;color:var(--emerald-bright);padding:1px 5px;border:1px solid rgba(45,179,96,.3);border-radius:8px;margin-right:5px;">📡 ${payload.from}</span>`;
-      const dmsg = addMsg('ai', syncLabel + payload.dmText);
-      dmsg.classList.add('sync-msg');
-      // All players hear the voice narration
-      speak(payload.dmText);
-      // Auto ambient SFX
-      autoSFXFromText(payload.dmText);
-      // Parse and apply any stat changes (damage, healing etc) from this DM text
-      parseAndApplyStatChanges(payload.dmText, false); // false = don't re-broadcast
-      // Check if we need to show a roll prompt for combat
-      detectAndPromptRoll(payload.dmText);
+  if (payload.from !== myPartyName) {
+    if (payload.playerAction) {
+      addMsg('usr', `[${payload.from}]: ${payload.playerAction}`);
     }
-    updateSyncBanner();
-  }
-  else if (msgType === 'roll_result') {
-    /* Another player rolled dice — show it to everyone */
-    if (payload.from !== myPartyName) {
-      let flavor = '';
-      if (payload.die === 20) {
-        if (payload.result === 20) flavor = '⭐ NAT 20!';
-        else if (payload.result === 1) flavor = '💀 CRIT FAIL!';
-        else if (payload.result >= 15) flavor = '✨ Strong!';
-        else flavor = '🎲';
-      } else flavor = '🎲';
-      addMsg('ai', `*${flavor} ${payload.from} rolled <strong style="color:var(--gold);font-size:14px;">${payload.result}</strong> on d${payload.die}${payload.type ? ' — ' + payload.type : ''}*`);
-    }
-  }
-  else if (msgType === 'turn') {
-    /* Turn system — non-host players get prompted when it's their turn */
-    const myName = myPartyName || localStorage.getItem('dm_char_name') || '';
-    if (payload.forPlayer === myName) {
-      showRollPrompt(payload.rollType || 'Attack', payload.die || 20,
-        `⚔️ YOUR TURN! Roll d${payload.die || 20} to ${payload.rollType || 'Attack'}`);
-      addMsg('ai', `*⚔️ It's YOUR turn, ${myName}! Hit the glowing ROLL NOW button!*`);
-      sfx_levelup();
-      requestWakeLock();
-    } else {
-      addMsg('ai', `*⚔️ Waiting for ${payload.forPlayer} to take their turn...*`);
-    }
-  }
-  else if (msgType === 'combat_start') {
-    if (payload.enemyName && !currentEnemy) spawnEnemy(payload.enemyName, payload.enemyHp || 20, []);
-  }
-  else if (msgType === 'enemy_hp') {
-    if (currentEnemy && payload.hp !== undefined) {
-      currentEnemy.hp = payload.hp;
-      updateEnemyBar();
-      if (currentEnemy.hp <= 0) setTimeout(() => dismissEnemy(), 2000);
-    }
+    const syncLabel = `<span class="story-sync-tag">📡 ${payload.from}</span>`;
+    const dmsg = addMsg('ai', syncLabel + payload.dmText);
+    speak(payload.dmText);
+    autoSFXFromText(payload.dmText);
+    parseAndApplyStatChanges(payload.dmText);
   }
 }
 
@@ -1163,7 +1114,7 @@ function broadcastStory(playerAction, dmText) {
     playerAction: playerAction,
     dmText: dmText,
     timestamp: Date.now()
-  }), { qos: 1 }); // qos:1 = at least once delivery, ensures everyone gets it
+  }), { qos: 1 });
 }
 
 function broadcastRollResult(die, result, type) {
@@ -1350,6 +1301,8 @@ function processTurn() {
   if (!combatActive || turnOrder.length === 0) return;
   const current = turnOrder[currentTurnIdx];
   renderCombatHUD();
+  const myName = myPartyName || localStorage.getItem('dm_char_name') || '';
+
   if (current.isEnemy) {
     addMsg('ai', `*⚔️ ${current.name}'s turn...*`);
     setTimeout(() => {
@@ -1364,25 +1317,41 @@ function processTurn() {
       } else {
         addMsg('ai', `*${current.name} rolls ${atkRoll} — misses!*`);
       }
+      // Broadcast enemy attack to all party members
+      if (mqttClient && mqttConnected && partyCode) {
+        mqttClient.publish(mqttTopic('story'), JSON.stringify({
+          from: 'SYSTEM',
+          playerAction: '',
+          dmText: `*${current.name} attacks! ${atkRoll >= 10 ? `Hits for ${dmg} damage!` : 'Misses!'}*`,
+          timestamp: Date.now()
+        }), { qos: 0 });
+      }
       broadcastPartyUpdate();
       setTimeout(advanceTurn, 1500);
     }, 1000);
   } else {
-    const myName = myPartyName || localStorage.getItem('dm_char_name') || '';
     if (current.name === myName) {
+      // It's MY turn — show roll prompt
       showRollPrompt('Attack', 20, `⚔️ YOUR TURN, ${myName}! Roll d20 to Attack`);
-      if (partyCode && partyRole === 'host') broadcastTurn(current.name, 'Attack', 20);
+      addMsg('ai', `*⚔️ It's your turn, ${myName}! Hit ROLL NOW!*`);
+      // Tell ALL party members it's this player's turn
+      if (mqttClient && mqttConnected && partyCode) {
+        broadcastTurn(current.name, 'Attack', 20);
+      }
     } else {
-      addMsg('ai', `*⚔️ ${current.name}'s turn — waiting...*`);
-      if (partyCode && partyRole === 'host') broadcastTurn(current.name, 'Attack', 20);
-      // Auto-advance if other player doesn't roll within 15s
+      // Another player's turn — show waiting message
+      addMsg('ai', `*⚔️ ${current.name}'s turn — waiting for them to roll...*`);
+      if (partyCode && partyRole === 'host') {
+        broadcastTurn(current.name, 'Attack', 20);
+      }
+      // Auto-advance after 20 seconds if they don't roll
       clearTimeout(window._autoAdvance);
       window._autoAdvance = setTimeout(() => {
         if (combatActive && turnOrder[currentTurnIdx]?.name === current.name) {
-          addMsg('ai', `*${current.name} hesitates...*`);
+          addMsg('ai', `*${current.name} hesitates — turn passes.*`);
           advanceTurn();
         }
-      }, 15000);
+      }, 20000);
     }
   }
 }
@@ -2209,7 +2178,12 @@ async function sendToDM(userMsg, isSystem = false) {
     addMsg('ai', `*⚠️ Connection failed: ${e.message}. Check your internet connection and API key.*`);
     document.getElementById('fst').textContent = 'ERROR';
   }
- 
+  
+   // ★ Broadcast SAME story to ALL party members simultaneously
+    if (!isSystem && partyCode && mqttConnected) {
+      broadcastStory(savedTxt || userMsg, dmText);
+    }
+	
   isStreaming = false;
   if (btn) { btn.disabled = false; btn.textContent = '⚔️ SEND'; }
 }
@@ -2231,54 +2205,16 @@ async function send() {
   const txt = inp.value.trim();
   if (!txt) return;
   if (!apiKey) {
-    addMsg('ai', '*The Oracle remains silent...* Please go to the <strong>LORE</strong> tab and enter your Groq API key.');
+    addMsg('ai', '*The Oracle requires a Groq API key. Visit the LORE tab.*');
     return;
   }
-  addMsg('usr', txt);
-  inp.value = '';
   inp.blur();
+  const savedTxt = txt;
+  inp.value = '';
   btn.disabled = true;
-  const campaign = localStorage.getItem('dm_campaign') || '', character = localStorage.getItem('dm_character') || '';
-  let contextMsg = txt;
-  const members = Object.values(partyMembers);
-  if (partyCode && members.length > 1) {
-    const pd = members.map(m => `${m.name} (${m.class || '?'}, HP:${m.hp}/${m.maxHp})`).join(', ');
-    if (dmHist.length === 0) contextMsg = `[CAMPAIGN: ${campaign || 'Open World'}] [CHARACTER: ${character || 'Unknown'}] [PARTY: ${pd}] ${txt}`;
-  } else if (dmHist.length === 0 && (campaign || character)) {
-    contextMsg = `[CAMPAIGN: ${campaign || 'Open World'}] [CHARACTER: ${character || 'Unknown'}] ${txt}`;
-  }
-  contextMsg += ` [STATS: HP ${vitals.hp}/${vitals.maxHp}, Stamina ${vitals.stamina}/${vitals.maxStamina}${vitals.maxMana > 0 ? ', Mana ' + vitals.mana + '/' + vitals.maxMana : ''}]`;
-  dmHist.push({ role: 'user', content: contextMsg });
-  const th = addMsg('ai', '<em>*The Oracle consults the ancient tomes...*</em>');
-  th.classList.add('thnk');
-  try {
-    const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + apiKey },
-      body: JSON.stringify({ model: 'llama-3.3-70b-versatile', max_tokens: 500, temperature: 0.85,
-        messages: [{ role: 'system', content: DM_SYSTEM }, ...dmHist] })
-    });
-    const d = await res.json();
-    th.remove();
-    if (d.error) {
-      addMsg('ai', '*The oracle falters...* Error: ' + d.error.message);
-      dmHist.pop();
-    } else {
-      const r = d.choices[0].message.content;
-      dmHist.push({ role: 'assistant', content: r });
-      addMsg('ai', r);
-      speak(r);
-      autoSFXFromText(r);
-      parseAndApplyStatChanges(r);
-      autoSave();
-      broadcastPartyUpdate();
-    }
-  } catch (e) {
-    th.remove();
-    addMsg('ai', '*The scrying pool goes dark...* Connection failed. Check your API key on the LORE tab.');
-    dmHist.pop();
-  }
-  btn.disabled = false;
+  addMsg('usr', savedTxt);
+  sfx_click();
+  setTimeout(function() { sendToDM(savedTxt, false); }, 50);
 }
  
 function ask(btn) {
