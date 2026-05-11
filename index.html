@@ -1074,10 +1074,22 @@ function handleMqttMessage(topic, payload) {
       addMsg('usr', `[${payload.from}]: ${payload.playerAction}`);
     }
     const syncLabel = `<span class="story-sync-tag">📡 ${payload.from}</span>`;
-    addMsg('ai', syncLabel + payload.dmText);
-    speak(payload.dmText);
+    const msgDiv = addMsg('ai', syncLabel + payload.dmText);
+    
+    // Add a TAP TO HEAR button so the player can trigger speech manually
+    const hearBtn = document.createElement('button');
+    hearBtn.textContent = '🔊 TAP TO HEAR';
+    hearBtn.style.cssText = 'margin-top:5px;padding:4px 10px;border:1px solid var(--gold);color:var(--gold);background:transparent;font-family:Cinzel,serif;font-size:7px;letter-spacing:1px;cursor:pointer;border-radius:2px;display:block;';
+    hearBtn.onclick = function() {
+      speak(payload.dmText);
+      hearBtn.textContent = '🔊 PLAYING...';
+      hearBtn.disabled = true;
+    };
+    msgDiv.appendChild(hearBtn);
+    
     autoSFXFromText(payload.dmText);
     parseAndApplyStatChanges(payload.dmText);
+    showSfxInd('📡 NEW STORY FROM ' + payload.from.toUpperCase());
   }
 }
 
@@ -1299,60 +1311,64 @@ function startCombatTurns(enemyName) {
 
 function processTurn() {
   if (!combatActive || turnOrder.length === 0) return;
+  
+  // Only host runs the turn engine
+  if (partyCode && partyRole !== 'host') return;
+  
   const current = turnOrder[currentTurnIdx];
   renderCombatHUD();
   const myName = myPartyName || localStorage.getItem('dm_char_name') || '';
 
   if (current.isEnemy) {
-    addMsg('ai', `*⚔️ ${current.name}'s turn...*`);
-    setTimeout(() => {
-      if (!combatActive) return;
-      const dmg = Math.floor(Math.random()*8)+1;
-      const atkRoll = Math.floor(Math.random()*20)+1;
-      if (atkRoll >= 10) {
-        addMsg('ai', `*${current.name} rolls ${atkRoll} — hits! You take ${dmg} damage!*`);
-        adjustStat('hp', -dmg, true);
-        showStatNotif(`💔 -${dmg} HP`, 'damage');
-        sfx_damage();
-      } else {
-        addMsg('ai', `*${current.name} rolls ${atkRoll} — misses!*`);
-      }
-      // Broadcast enemy attack to all party members
-      if (mqttClient && mqttConnected && partyCode) {
-        mqttClient.publish(mqttTopic('story'), JSON.stringify({
-          from: 'SYSTEM',
-          playerAction: '',
-          dmText: `*${current.name} attacks! ${atkRoll >= 10 ? `Hits for ${dmg} damage!` : 'Misses!'}*`,
-          timestamp: Date.now()
-        }), { qos: 0 });
-      }
-      broadcastPartyUpdate();
-      setTimeout(advanceTurn, 1500);
-    }, 1000);
-  } else {
-    if (current.name === myName) {
-      // It's MY turn — show roll prompt
-      showRollPrompt('Attack', 20, `⚔️ YOUR TURN, ${myName}! Roll d20 to Attack`);
-      addMsg('ai', `*⚔️ It's your turn, ${myName}! Hit ROLL NOW!*`);
-      // Tell ALL party members it's this player's turn
-      if (mqttClient && mqttConnected && partyCode) {
-        broadcastTurn(current.name, 'Attack', 20);
-      }
-    } else {
-      // Another player's turn — show waiting message
-      addMsg('ai', `*⚔️ ${current.name}'s turn — waiting for them to roll...*`);
-      if (partyCode && partyRole === 'host') {
-        broadcastTurn(current.name, 'Attack', 20);
-      }
-      // Auto-advance after 20 seconds if they don't roll
-      clearTimeout(window._autoAdvance);
-      window._autoAdvance = setTimeout(() => {
-        if (combatActive && turnOrder[currentTurnIdx]?.name === current.name) {
-          addMsg('ai', `*${current.name} hesitates — turn passes.*`);
-          advanceTurn();
-        }
-      }, 20000);
+    const dmg = Math.floor(Math.random()*8)+1;
+    const atkRoll = Math.floor(Math.random()*20)+1;
+    const atkMsg = atkRoll >= 10
+      ? `*⚔️ ${current.name} rolls ${atkRoll} — hits! You take ${dmg} damage!*`
+      : `*⚔️ ${current.name} rolls ${atkRoll} — misses!*`;
+    
+    // Broadcast enemy attack to ALL players
+    broadcastStory('', atkMsg);
+    addMsg('ai', atkMsg);
+    
+    if (atkRoll >= 10) {
+      adjustStat('hp', -dmg, true);
+      showStatNotif(`💔 -${dmg} HP`, 'damage');
+      sfx_damage();
     }
+	if (stat === 'hp' && vitals.hp <= 0) {
+  showStatNotif('💀 YOU HAVE FALLEN!', 'damage');
+  const deathMsg = `*💀 ${myPartyName || 'The hero'} has fallen! Roll d20 death saves — 3 successes to stabilize.*`;
+  addMsg('ai', deathMsg);
+  broadcastStory('', deathMsg);
+  if (combatActive) advanceTurn(); // Skip their turns while downed
+}
+    broadcastPartyUpdate();
+    setTimeout(advanceTurn, 2500);
+  } else {
+    // Broadcast whose turn it is to ALL players
+    broadcastTurn(current.name, 'Attack', 20);
+    
+    const turnMsg = current.name === myName
+      ? `*⚔️ YOUR TURN! Roll d20 to attack!*`
+      : `*⚔️ ${current.name}'s turn — waiting...*`;
+    
+    broadcastStory('', turnMsg);
+    addMsg('ai', turnMsg);
+    
+    if (current.name === myName) {
+      showRollPrompt('Attack', 20, `⚔️ YOUR TURN! Roll d20!`);
+    }
+    
+    // Auto advance after 20s if player doesn't roll
+    clearTimeout(window._autoAdvance);
+    window._autoAdvance = setTimeout(() => {
+      if (combatActive && turnOrder[currentTurnIdx]?.name === current.name) {
+        const skipMsg = `*${current.name} hesitates — turn skipped.*`;
+        broadcastStory('', skipMsg);
+        addMsg('ai', skipMsg);
+        advanceTurn();
+      }
+    }, 20000);
   }
 }
 
@@ -1360,8 +1376,15 @@ function advanceTurn() {
   if (!combatActive) return;
   clearTimeout(window._autoAdvance);
   if (!currentEnemy || currentEnemy.hp <= 0) { endCombat(); return; }
+  
+  // ONLY HOST advances turns and broadcasts - members just wait
+  if (partyCode && partyRole !== 'host') return;
+  
   currentTurnIdx = (currentTurnIdx + 1) % turnOrder.length;
-  if (currentTurnIdx === 0) { combatRound++; addMsg('ai', `*⚔️ — Round ${combatRound} —*`); }
+  if (currentTurnIdx === 0) {
+    combatRound++;
+    addMsg('ai', `*⚔️ — Round ${combatRound} —*`);
+  }
   setTimeout(processTurn, 500);
 }
 
