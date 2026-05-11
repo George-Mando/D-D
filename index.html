@@ -1335,13 +1335,7 @@ function processTurn() {
       showStatNotif(`💔 -${dmg} HP`, 'damage');
       sfx_damage();
     }
-	if (stat === 'hp' && vitals.hp <= 0) {
-  showStatNotif('💀 YOU HAVE FALLEN!', 'damage');
-  const deathMsg = `*💀 ${myPartyName || 'The hero'} has fallen! Roll d20 death saves — 3 successes to stabilize.*`;
-  addMsg('ai', deathMsg);
-  broadcastStory('', deathMsg);
-  if (combatActive) advanceTurn(); // Skip their turns while downed
-}
+	
     broadcastPartyUpdate();
     setTimeout(advanceTurn, 2500);
   } else {
