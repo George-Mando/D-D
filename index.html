@@ -942,8 +942,7 @@ body::after{content:'';position:fixed;inset:0;background:radial-gradient(ellipse
 </div>
 
 <script>
-'use strict';
-let apiKey = localStorage.getItem('xai_gk') || '';
+var apiKey = localStorage.getItem('xai_gk') || '';
 
 /* ═══════════════════════════════════════════════════════
    PWA — Service Worker & Install
@@ -1507,7 +1506,16 @@ function detectAndPromptRoll(text) {
 ═══════════════════════════════════════════════════════ */
 const AudioCtx = window.AudioContext || window.webkitAudioContext;
 let audioCtx = null, sfxEnabled = false;
-function getAC(){if(!audioCtx)audioCtx=new AudioCtx();if(audioCtx.state==='suspended')audioCtx.resume();return audioCtx;}
+function getAC() {
+  if(!audioCtx) {
+    try { audioCtx = new AudioCtx(); }
+    catch(e) { return null; }
+  }
+  if(audioCtx && audioCtx.state === 'suspended') {
+    audioCtx.resume().catch(function(){});
+  }
+  return audioCtx;
+}
 function makeNoise(ctx,dur){const sr=ctx.sampleRate,len=Math.floor(sr*dur),buf=ctx.createBuffer(1,len,sr),d=buf.getChannelData(0);for(let i=0;i<len;i++)d[i]=Math.random()*2-1;return buf;}
 function toggleSfxMaster(){sfxEnabled=!sfxEnabled;const tog=document.getElementById('sfx-master-toggle'),st=document.getElementById('sfx-master-status');if(sfxEnabled){tog.classList.add('on');st.textContent='ON';}else{tog.classList.remove('on');st.textContent='OFF';stopAllAmbient();}}
 function toggleSfxMasterDM(){sfxEnabled=!sfxEnabled;const btn=document.getElementById('sfx-toggle-btn');if(sfxEnabled){btn.classList.add('active');btn.textContent='🔊 ON';}else{btn.classList.remove('active');btn.textContent='🔊';stopAllAmbient();}const tog=document.getElementById('sfx-master-toggle'),st=document.getElementById('sfx-master-status');if(tog){if(sfxEnabled){tog.classList.add('on');st.textContent='ON';}else{tog.classList.remove('on');st.textContent='OFF';}}}
@@ -1517,7 +1525,19 @@ function setAmbientVolume(v){ambientVolume=v/100;Object.values(ambientNodes).for
 const AMBIENTS={fire:{baseVol:.5,build(ctx){const g=ctx.createGain();g.gain.value=0;const buf=makeNoise(ctx,4);const src=ctx.createBufferSource();src.buffer=buf;src.loop=true;const f=ctx.createBiquadFilter();f.type='bandpass';f.frequency.value=300;f.Q.value=.8;const f2=ctx.createBiquadFilter();f2.type='lowpass';f2.frequency.value=600;src.connect(f);f.connect(f2);f2.connect(g);g.connect(ctx.destination);src.start();return{src,g,gainNode:g,baseVol:.5};}},wind:{baseVol:.5,build(ctx){const g=ctx.createGain();g.gain.value=0;const buf=makeNoise(ctx,6);const src=ctx.createBufferSource();src.buffer=buf;src.loop=true;const f=ctx.createBiquadFilter();f.type='bandpass';f.frequency.value=400;f.Q.value=.3;src.connect(f);f.connect(g);g.connect(ctx.destination);src.start();return{src,g,gainNode:g,baseVol:.5};}},rain:{baseVol:.5,build(ctx){const g=ctx.createGain();g.gain.value=0;const buf=makeNoise(ctx,8);const src=ctx.createBufferSource();src.buffer=buf;src.loop=true;const f=ctx.createBiquadFilter();f.type='lowpass';f.frequency.value=2000;src.connect(f);f.connect(g);g.connect(ctx.destination);src.start();return{src,g,gainNode:g,baseVol:.5};}},dungeon:{baseVol:.35,build(ctx){const g=ctx.createGain();g.gain.value=0;const buf=makeNoise(ctx,6);const src=ctx.createBufferSource();src.buffer=buf;src.loop=true;const f=ctx.createBiquadFilter();f.type='lowpass';f.frequency.value=150;src.connect(f);f.connect(g);g.connect(ctx.destination);src.start();return{src,g,gainNode:g,baseVol:.35};}},forest:{baseVol:.4,build(ctx){const g=ctx.createGain();g.gain.value=0;const buf=makeNoise(ctx,6);const src=ctx.createBufferSource();src.buffer=buf;src.loop=true;const f=ctx.createBiquadFilter();f.type='bandpass';f.frequency.value=800;f.Q.value=.4;src.connect(f);f.connect(g);g.connect(ctx.destination);src.start();return{src,g,gainNode:g,baseVol:.4};}},tavern:{baseVol:.4,build(ctx){const g=ctx.createGain();g.gain.value=0;const buf=makeNoise(ctx,8);const src=ctx.createBufferSource();src.buffer=buf;src.loop=true;const f=ctx.createBiquadFilter();f.type='bandpass';f.frequency.value=500;f.Q.value=.5;src.connect(f);f.connect(g);g.connect(ctx.destination);src.start();return{src,g,gainNode:g,baseVol:.4};}},combat:{baseVol:.45,build(ctx){const g=ctx.createGain();g.gain.value=0;const buf=makeNoise(ctx,4);const src=ctx.createBufferSource();src.buffer=buf;src.loop=true;const f=ctx.createBiquadFilter();f.type='lowpass';f.frequency.value=250;src.connect(f);f.connect(g);g.connect(ctx.destination);src.start();return{src,g,gainNode:g,baseVol:.45};}},ocean:{baseVol:.5,build(ctx){const g=ctx.createGain();g.gain.value=0;const buf=makeNoise(ctx,8);const src=ctx.createBufferSource();src.buffer=buf;src.loop=true;const f=ctx.createBiquadFilter();f.type='lowpass';f.frequency.value=500;src.connect(f);f.connect(g);g.connect(ctx.destination);src.start();return{src,g,gainNode:g,baseVol:.5};}},horror:{baseVol:.35,build(ctx){const g=ctx.createGain();g.gain.value=0;const o1=ctx.createOscillator();o1.type='sawtooth';o1.frequency.value=40;const o2=ctx.createOscillator();o2.type='sawtooth';o2.frequency.value=41.2;const hg=ctx.createGain();hg.gain.value=.1;const hf=ctx.createBiquadFilter();hf.type='lowpass';hf.frequency.value=180;o1.connect(hf);o2.connect(hf);hf.connect(hg);hg.connect(g);g.connect(ctx.destination);o1.start();o2.start();return{o1,o2,g,gainNode:g,baseVol:.35};}}};
 function toggleAmbient(name){if(!sfxEnabled){alert('Enable ambient sounds first!');return;}const ctx=getAC();const btn=document.getElementById('sfx-btn-'+name);if(ambientNodes[name]?.playing){ambientNodes[name].gainNode.gain.setTargetAtTime(0,ctx.currentTime,.5);ambientNodes[name].playing=false;if(btn)btn.classList.remove('playing');}else{if(!ambientNodes[name]){const spec=AMBIENTS[name];const built=spec.build(ctx);ambientNodes[name]={...built,playing:true,baseVol:spec.baseVol};}else{ambientNodes[name].playing=true;}ambientNodes[name].gainNode.gain.setTargetAtTime(ambientVolume*AMBIENTS[name].baseVol,ctx.currentTime,1.0);if(btn)btn.classList.add('playing');}}
 function autoSFXFromText(text){if(!sfxEnabled)return;const t=text.toLowerCase();const triggers=[{words:['fire','flame','torch','hearth'],sfx:'fire'},{words:['wind','gust','storm'],sfx:'wind'},{words:['rain','downpour','thunder'],sfx:'rain'},{words:['dungeon','cave','crypt'],sfx:'dungeon'},{words:['forest','trees','woods','birds'],sfx:'forest'},{words:['tavern','inn','drinking'],sfx:'tavern'},{words:['battle','combat','attack','fighting'],sfx:'combat'},{words:['ocean','sea','waves'],sfx:'ocean'},{words:['shadow','horror','undead','vampire'],sfx:'horror'}];for(const tr of triggers){if(tr.words.some(w=>t.includes(w))&&!ambientNodes[tr.sfx]?.playing){toggleAmbient(tr.sfx);break;}}}
-function sfx_click(){try{const ctx=getAC(),g=ctx.createGain();g.gain.setValueAtTime(.05,ctx.currentTime);g.gain.exponentialRampToValueAtTime(.001,ctx.currentTime+.06);g.connect(ctx.destination);const o=ctx.createOscillator();o.type='sine';o.frequency.value=440;o.connect(g);o.start();o.stop(ctx.currentTime+.06);}catch(e){}}
+function sfx_click(){
+  try{
+    const ctx=getAC();
+    if(!ctx) return;
+    const g=ctx.createGain();
+    g.gain.setValueAtTime(.05,ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(.001,ctx.currentTime+.06);
+    g.connect(ctx.destination);
+    const o=ctx.createOscillator();
+    o.type='sine';o.frequency.value=440;
+    o.connect(g);o.start();o.stop(ctx.currentTime+.06);
+  }catch(e){}
+}
 function sfx_roll(){try{const ctx=getAC(),g=ctx.createGain();g.gain.setValueAtTime(.1,ctx.currentTime);g.gain.exponentialRampToValueAtTime(.001,ctx.currentTime+.15);g.connect(ctx.destination);const o=ctx.createOscillator();o.type='triangle';o.frequency.setValueAtTime(300+Math.random()*400,ctx.currentTime);o.frequency.exponentialRampToValueAtTime(100,ctx.currentTime+.12);o.connect(g);o.start();o.stop(ctx.currentTime+.15);}catch(e){}}
 function sfx_critical(){try{const ctx=getAC();[523,659,784].forEach((f,i)=>setTimeout(()=>{const g=ctx.createGain();g.gain.setValueAtTime(.12,ctx.currentTime);g.gain.exponentialRampToValueAtTime(.001,ctx.currentTime+.4);g.connect(ctx.destination);const o=ctx.createOscillator();o.type='sine';o.frequency.value=f;o.connect(g);o.start();o.stop(ctx.currentTime+.4);},i*80));}catch(e){}}
 function sfx_fail(){try{const ctx=getAC(),g=ctx.createGain();g.gain.setValueAtTime(.12,ctx.currentTime);g.gain.exponentialRampToValueAtTime(.001,ctx.currentTime+.8);g.connect(ctx.destination);const o=ctx.createOscillator();o.type='sawtooth';o.frequency.setValueAtTime(180,ctx.currentTime);o.frequency.exponentialRampToValueAtTime(55,ctx.currentTime+.8);o.connect(g);o.start();o.stop(ctx.currentTime+.8);}catch(e){}}
@@ -2224,45 +2244,42 @@ function ask(btn) {
    INIT — App Boot Sequence
 ═══════════════════════════════════════════════════════ */
 (function init() {
-  // Restore persisted state
   apiKey = localStorage.getItem('xai_gk') || '';
   gold = parseInt(localStorage.getItem('dm_gold') || '0');
- 
+
   try { inventory = JSON.parse(localStorage.getItem('dm_inventory') || '[]'); }
-  catch (e) { inventory = []; }
- 
+  catch(e) { inventory = []; }
+
   try { equipped = JSON.parse(localStorage.getItem('dm_equipped') || '{}'); }
-  catch (e) { equipped = {}; }
- 
+  catch(e) { equipped = {}; }
+
   try {
     const sv = JSON.parse(localStorage.getItem('dm_vitals') || 'null');
-    if (sv) vitals = sv;
-  } catch (e) {}
- 
-  // Initial renders
-  renderVitals();
-  renderInventory();
-  updateKeyStatusDisplay();
- 
-  // Wake lock to keep screen on during play
-  requestWakeLock();
- 
-  // Oracle status
-  if (apiKey) {
-    document.getElementById('fst').textContent = 'ORACLE AWAKE';
+    if(sv) vitals = sv;
+  } catch(e) {}
+
+  try { renderVitals(); } catch(e) {}
+  try { renderInventory(); } catch(e) {}
+  try { updateKeyStatusDisplay(); } catch(e) {}
+
+  if(apiKey) {
+    const fst = document.getElementById('fst');
+    if(fst) fst.textContent = 'ORACLE AWAKE';
   }
- 
-  // Voice init
-  if (window.speechSynthesis) {
-    loadV();
-    window.speechSynthesis.onvoiceschanged = loadV;
+
+  if(window.speechSynthesis) {
+    try { loadV(); window.speechSynthesis.onvoiceschanged = loadV; } catch(e) {}
   }
- 
-  // Gold display
+
   const goldEl = document.getElementById('gold-display');
-  if (goldEl) goldEl.textContent = gold;
- 
-  console.log('⚔️ DM Oracle v4.6 — XenClipse Studios — All systems nominal');
+  if(goldEl) goldEl.textContent = gold;
+
+  // Mobile: request wake lock only after user gesture
+  document.addEventListener('touchstart', function() {
+    requestWakeLock();
+  }, { once: true });
+
+  console.log('DM Oracle v4.6 — ready');
 })();
 </script>
 </body>
