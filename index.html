@@ -2219,22 +2219,59 @@ function addMsg(type, html) {
   return div;
 }
  
-function send() {
-  const inp = document.getElementById('cin');
-  if (!inp) return;
-  const txt = (inp.value || '').trim();
+async function send() {
+  const inp = document.getElementById('cin'), btn = document.getElementById('sbtn');
+  const txt = inp.value.trim();
   if (!txt) return;
   if (!apiKey) {
-    addMsg('ai', '*The Oracle requires a Groq API key. Visit the LORE tab to awaken it.*');
-    inp.blur();
+    addMsg('ai', '*The Oracle remains silent...* Please go to the <strong>LORE</strong> tab and enter your Groq API key.');
     return;
   }
-  inp.blur(); // dismiss keyboard on Android before processing
-  const savedTxt = txt;
+  addMsg('usr', txt);
   inp.value = '';
-  addMsg('usr', savedTxt);
-  sfx_click();
-  setTimeout(function() { sendToDM(savedTxt, false); }, 50);
+  inp.blur();
+  btn.disabled = true;
+  const campaign = localStorage.getItem('dm_campaign') || '', character = localStorage.getItem('dm_character') || '';
+  let contextMsg = txt;
+  const members = Object.values(partyMembers);
+  if (partyCode && members.length > 1) {
+    const pd = members.map(m => `${m.name} (${m.class || '?'}, HP:${m.hp}/${m.maxHp})`).join(', ');
+    if (dmHist.length === 0) contextMsg = `[CAMPAIGN: ${campaign || 'Open World'}] [CHARACTER: ${character || 'Unknown'}] [PARTY: ${pd}] ${txt}`;
+  } else if (dmHist.length === 0 && (campaign || character)) {
+    contextMsg = `[CAMPAIGN: ${campaign || 'Open World'}] [CHARACTER: ${character || 'Unknown'}] ${txt}`;
+  }
+  contextMsg += ` [STATS: HP ${vitals.hp}/${vitals.maxHp}, Stamina ${vitals.stamina}/${vitals.maxStamina}${vitals.maxMana > 0 ? ', Mana ' + vitals.mana + '/' + vitals.maxMana : ''}]`;
+  dmHist.push({ role: 'user', content: contextMsg });
+  const th = addMsg('ai', '<em>*The Oracle consults the ancient tomes...*</em>');
+  th.classList.add('thnk');
+  try {
+    const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + apiKey },
+      body: JSON.stringify({ model: 'llama-3.3-70b-versatile', max_tokens: 500, temperature: 0.85,
+        messages: [{ role: 'system', content: DM_SYSTEM }, ...dmHist] })
+    });
+    const d = await res.json();
+    th.remove();
+    if (d.error) {
+      addMsg('ai', '*The oracle falters...* Error: ' + d.error.message);
+      dmHist.pop();
+    } else {
+      const r = d.choices[0].message.content;
+      dmHist.push({ role: 'assistant', content: r });
+      addMsg('ai', r);
+      speak(r);
+      autoSFXFromText(r);
+      parseAndApplyStatChanges(r);
+      autoSave();
+      broadcastPartyUpdate();
+    }
+  } catch (e) {
+    th.remove();
+    addMsg('ai', '*The scrying pool goes dark...* Connection failed. Check your API key on the LORE tab.');
+    dmHist.pop();
+  }
+  btn.disabled = false;
 }
  
 function ask(btn) {
