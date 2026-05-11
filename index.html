@@ -942,7 +942,8 @@ body::after{content:'';position:fixed;inset:0;background:radial-gradient(ellipse
 </div>
 
 <script>
-var apiKey = localStorage.getItem('xai_gk') || '';
+'use strict';
+let apiKey = localStorage.getItem('xai_gk') || '';
 
 /* ═══════════════════════════════════════════════════════
    PWA — Service Worker & Install
