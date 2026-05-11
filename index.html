@@ -1074,7 +1074,7 @@ function handleMqttMessage(topic, payload) {
       addMsg('usr', `[${payload.from}]: ${payload.playerAction}`);
     }
     const syncLabel = `<span class="story-sync-tag">📡 ${payload.from}</span>`;
-    const dmsg = addMsg('ai', syncLabel + payload.dmText);
+    addMsg('ai', syncLabel + payload.dmText);
     speak(payload.dmText);
     autoSFXFromText(payload.dmText);
     parseAndApplyStatChanges(payload.dmText);
@@ -1532,8 +1532,25 @@ if(window.speechSynthesis){loadV();window.speechSynthesis.onvoiceschanged=loadV;
 function onVoiceChange(){voiceGender=document.getElementById('voice-selector').value;}
 function toggleVoice(){voiceEnabled=!voiceEnabled;const btn=document.getElementById('voice-toggle-btn');if(voiceEnabled){btn.classList.add('active');btn.textContent='🎙 ON';}else{btn.classList.remove('active');btn.textContent='🎙';if(window.speechSynthesis)window.speechSynthesis.cancel();}}
 function bestVoice(){const mp=['Google UK English Male','Daniel','Alex','Fred'],fp=['Google UK English Female','Samantha','Karen','Moira'],prefer=voiceGender==='female'?fp:mp;for(const n of prefer){const v=voices.find(x=>x.name===n);if(v)return v;}return voices.find(v=>v.lang.startsWith('en'))||voices[0];}
-function speak(txt){if(!window.speechSynthesis||!voiceEnabled)return;window.speechSynthesis.cancel();const clean=txt.replace(/[*_`#\[\]<>]/g,'').trim();const u=new SpeechSynthesisUtterance(clean);const v=bestVoice();if(v)u.voice=v;if(voiceGender==='male'){u.pitch=.75;u.rate=.78;u.volume=1;}else{u.pitch=1.1;u.rate=.82;u.volume=1;}u.onstart=()=>{window.dmSpeaking=true;document.getElementById('fst').textContent='SPEAKING ◆';};u.onend=u.onerror=()=>{window.dmSpeaking=false;document.getElementById('fst').textContent=apiKey?'ORACLE AWAKE':'DORMANT';};window.speechSynthesis.speak(u);}
-
+function speak(txt) {
+  if (!window.speechSynthesis || !voiceEnabled) return;
+  window.speechSynthesis.cancel();
+  const clean = txt.replace(/[*_`#\[\]<>]/g, '').trim();
+  
+  // On mobile, speech requires a prior user gesture
+  // Store pending speech and try to play, fall back silently
+  const u = new SpeechSynthesisUtterance(clean);
+  const v = bestVoice();
+  if (v) u.voice = v;
+  if (voiceGender === 'male') { u.pitch = .75; u.rate = .78; u.volume = 1; }
+  else { u.pitch = 1.1; u.rate = .82; u.volume = 1; }
+  u.onstart = () => { window.dmSpeaking = true; document.getElementById('fst').textContent = 'SPEAKING ◆'; };
+  u.onend = u.onerror = () => { window.dmSpeaking = false; document.getElementById('fst').textContent = apiKey ? 'ORACLE AWAKE' : 'DORMANT'; };
+  
+  try {
+    window.speechSynthesis.speak(u);
+  } catch(e) {}
+}
 /* ═══ SCREEN NAV ═══ */
 let faceBuilt=false;
 function showScreen(id,tab){sfx_click();document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));document.getElementById('screen-'+id).classList.add('active');if(tab)tab.classList.add('active');if(id==='dm'){if(!faceBuilt){buildFace();faceBuilt=true;}renderDMPanels();}if(id==='inventory')renderInventory();if(id==='character')loadSavedCharacter();if(id==='saves'){renderSaves();updateAutosaveInfo();}if(id==='lore')updateKeyStatusDisplay();}
@@ -2259,9 +2276,19 @@ function ask(btn) {
   if(goldEl) goldEl.textContent = gold;
 
   // Mobile: request wake lock only after user gesture
-  document.addEventListener('touchstart', function() {
-    requestWakeLock();
-  }, { once: true });
+  document.addEventListener('touchstart', function unlockAudio() {
+  // Unlock Web Audio
+  if (audioCtx && audioCtx.state === 'suspended') {
+    audioCtx.resume();
+  }
+  // Unlock Speech Synthesis on Android/iOS
+  if (window.speechSynthesis) {
+    const u = new SpeechSynthesisUtterance('');
+    u.volume = 0;
+    window.speechSynthesis.speak(u);
+  }
+  document.removeEventListener('touchstart', unlockAudio);
+}, { once: true });
 
   console.log('DM Oracle v4.6 — ready');
 })();
