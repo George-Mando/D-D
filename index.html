@@ -961,23 +961,6 @@ if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('./sw.js').then(reg => {
       console.log('SW registered:', reg.scope);
     }).catch(err => console.log('SW failed:', err));
-	document.addEventListener('touchstart', function unlockOnTouch() {
-    if (!window.speechUnlocked) {
-      if (window.speechSynthesis) {
-        const u = new SpeechSynthesisUtterance('');
-        u.volume = 0;
-        window.speechSynthesis.speak(u);
-        window.speechSynthesis.cancel();
-      }
-      if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
-      window.speechUnlocked = true;
-      if (window._pendingSpeech) {
-        speak(window._pendingSpeech);
-        window._pendingSpeech = null;
-      }
-    }
-    document.removeEventListener('touchstart', unlockOnTouch);
-  }, { once: true });
   });
 }
 
@@ -1197,20 +1180,6 @@ function generateCode() {
 }
 
 function createParty() {
-  // ★ UNLOCK SPEECH ON CREATE — this tap gesture unlocks audio for the whole session
-  if (window.speechSynthesis) {
-    const unlock = new SpeechSynthesisUtterance('');
-    unlock.volume = 0;
-    window.speechSynthesis.speak(unlock);
-    window.speechSynthesis.cancel();
-  }
-  if (AudioCtx) {
-    try {
-      if (!audioCtx) audioCtx = new AudioCtx();
-      audioCtx.resume();
-    } catch(e) {}
-  }
-  window.speechUnlocked = true;
   const nameEl = document.getElementById('host-name-input');
   myPartyName = nameEl.value.trim() || localStorage.getItem('dm_char_name') || 'Host';
   const btn = document.getElementById('create-party-btn');
@@ -1245,20 +1214,6 @@ function updateHostMemberList() {
 }
 
 function joinParty() {
-  // ★ UNLOCK SPEECH ON JOIN — this tap gesture unlocks audio for the whole session
-  if (window.speechSynthesis) {
-    const unlock = new SpeechSynthesisUtterance('');
-    unlock.volume = 0;
-    window.speechSynthesis.speak(unlock);
-    window.speechSynthesis.cancel();
-  }
-  if (AudioCtx) {
-    try {
-      if (!audioCtx) audioCtx = new AudioCtx();
-      audioCtx.resume();
-    } catch(e) {}
-  }
-  window.speechUnlocked = true;
   const nameEl = document.getElementById('join-name-input'), codeEl = document.getElementById('join-code-input'),
         statusEl = document.getElementById('join-status'), btn = document.getElementById('join-party-btn');
   myPartyName = nameEl.value.trim() || localStorage.getItem('dm_char_name') || 'Adventurer';
@@ -1380,7 +1335,6 @@ function processTurn() {
       showStatNotif(`💔 -${dmg} HP`, 'damage');
       sfx_damage();
     }
-	
     broadcastPartyUpdate();
     setTimeout(advanceTurn, 2500);
   } else {
@@ -1596,14 +1550,11 @@ function toggleVoice(){voiceEnabled=!voiceEnabled;const btn=document.getElementB
 function bestVoice(){const mp=['Google UK English Male','Daniel','Alex','Fred'],fp=['Google UK English Female','Samantha','Karen','Moira'],prefer=voiceGender==='female'?fp:mp;for(const n of prefer){const v=voices.find(x=>x.name===n);if(v)return v;}return voices.find(v=>v.lang.startsWith('en'))||voices[0];}
 function speak(txt) {
   if (!window.speechSynthesis || !voiceEnabled) return;
-  if (!window.speechUnlocked) {
-    // Not unlocked yet — store it and show a tap prompt
-    window._pendingSpeech = txt;
-    showSfxInd('TAP SCREEN TO HEAR STORY');
-    return;
-  }
   window.speechSynthesis.cancel();
   const clean = txt.replace(/[*_`#\[\]<>]/g, '').trim();
+  
+  // On mobile, speech requires a prior user gesture
+  // Store pending speech and try to play, fall back silently
   const u = new SpeechSynthesisUtterance(clean);
   const v = bestVoice();
   if (v) u.voice = v;
@@ -1611,9 +1562,11 @@ function speak(txt) {
   else { u.pitch = 1.1; u.rate = .82; u.volume = 1; }
   u.onstart = () => { window.dmSpeaking = true; document.getElementById('fst').textContent = 'SPEAKING ◆'; };
   u.onend = u.onerror = () => { window.dmSpeaking = false; document.getElementById('fst').textContent = apiKey ? 'ORACLE AWAKE' : 'DORMANT'; };
-  try { window.speechSynthesis.speak(u); } catch(e) {}
+  
+  try {
+    window.speechSynthesis.speak(u);
+  } catch(e) {}
 }
-
 /* ═══ SCREEN NAV ═══ */
 let faceBuilt=false;
 function showScreen(id,tab){sfx_click();document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));document.getElementById('screen-'+id).classList.add('active');if(tab)tab.classList.add('active');if(id==='dm'){if(!faceBuilt){buildFace();faceBuilt=true;}renderDMPanels();}if(id==='inventory')renderInventory();if(id==='character')loadSavedCharacter();if(id==='saves'){renderSaves();updateAutosaveInfo();}if(id==='lore')updateKeyStatusDisplay();}
@@ -1758,15 +1711,7 @@ function saveVitals(){localStorage.setItem('dm_vitals',JSON.stringify(vitals));}
 function renderVitals(){const hasMana=vitals.maxMana>0;setVital('hp',vitals.hp,vitals.maxHp);setVital('st',vitals.stamina,vitals.maxStamina);setVital('mp',vitals.mana,vitals.maxMana);setVital('status',vitals.status,vitals.maxStatus);document.getElementById('mana-row').style.display=hasMana?'flex':'none';const charName=localStorage.getItem('dm_char_name')||'';if(charName){document.getElementById('tavern-vitals').style.display='block';document.getElementById('tv-char-name').textContent=charName;syncTV('tv-hp',vitals.hp,vitals.maxHp);syncTV('tv-st',vitals.stamina,vitals.maxStamina);syncTV('tv-mp',vitals.mana,vitals.maxMana);syncTV('tv-status',vitals.status,vitals.maxStatus);document.getElementById('tv-mana-row').style.display=hasMana?'flex':'none';}renderDMVitals();}
 function setVital(key,cur,max){const pct=max>0?Math.max(0,Math.min(100,(cur/max)*100)):0;const disp=document.getElementById(key+'-display');if(disp)disp.textContent=`${cur}/${max}`;const bar=document.getElementById(key+'-bar');if(bar)bar.style.width=pct+'%';const track=document.getElementById(key+'-track');if(track)track.classList.toggle('danger',pct<25);}
 function syncTV(prefix,cur,max){const pct=max>0?Math.max(0,Math.min(100,(cur/max)*100)):0;const val=document.getElementById(prefix+'-val');if(val)val.textContent=`${cur}/${max}`;const bar=document.getElementById(prefix+'-bar');if(bar)bar.style.width=pct+'%';}
-function adjustStat(stat,amount,silent){if(!silent)sfx_click();if(stat==='hp')vitals.hp=Math.max(0,Math.min(vitals.maxHp,vitals.hp+amount));else if(stat==='stamina')vitals.stamina=Math.max(0,Math.min(vitals.maxStamina,vitals.stamina+amount));else if(stat==='mana')vitals.mana=Math.max(0,Math.min(vitals.maxMana,vitals.mana+amount));else if(stat==='status')vitals.status=Math.max(0,Math.min(vitals.maxStatus,vitals.status+amount));saveVitals();
-renderVitals();
-if (stat === 'hp' && vitals.hp <= 0) {
-  showStatNotif('💀 YOU HAVE FALLEN!', 'damage');
-  const deathMsg = `*💀 ${myPartyName || 'The hero'} has fallen! Roll d20 death saves — 3 successes to stabilize.*`;
-  addMsg('ai', deathMsg);
-  broadcastStory('', deathMsg);
-  if (combatActive) advanceTurn();
-}}
+function adjustStat(stat,amount,silent){if(!silent)sfx_click();if(stat==='hp')vitals.hp=Math.max(0,Math.min(vitals.maxHp,vitals.hp+amount));else if(stat==='stamina')vitals.stamina=Math.max(0,Math.min(vitals.maxStamina,vitals.stamina+amount));else if(stat==='mana')vitals.mana=Math.max(0,Math.min(vitals.maxMana,vitals.mana+amount));else if(stat==='status')vitals.status=Math.max(0,Math.min(vitals.maxStatus,vitals.status+amount));saveVitals();renderVitals();if(stat==='hp'&&vitals.hp<=0){showStatNotif('💀 YOU HAVE FALLEN!','damage');addMsg('ai','*💀 You collapse! Roll d20 for death saves — 3 successes to stabilize, 3 failures means death.*');}}
 
 /* ═══ SAVE/LOAD ═══ */
 const SAVE_KEY='dm_saves_v1',AUTOSAVE_KEY='dm_autosave_v1';
