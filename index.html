@@ -745,7 +745,8 @@ body::after{content:'';position:fixed;inset:0;background:radial-gradient(ellipse
         </div>
         <div class="dm-chat-row">
           <input class="cin" id="cin" placeholder="Describe your action, brave adventurer..." onkeydown="if(event.key==='Enter'){event.preventDefault();send();}"/>
-          <button class="snd" id="sbtn" onclick="send()">⚔️ SEND</button>
+          <button class="snd" onclick="debugTest()" style="background:rgba(255,0,0,.3);">🔧 TEST</button>
+<button class="snd" id="sbtn" onclick="send()">⚔️ SEND</button>
         </div>
       </div>
     </div>
@@ -942,8 +943,13 @@ body::after{content:'';position:fixed;inset:0;background:radial-gradient(ellipse
 </div>
 
 <script>
-'use strict';
-let apiKey = localStorage.getItem('xai_gk') || '';
+var apiKey = localStorage.getItem('xai_gk') || '';
+
+function debugTest() {
+  const inp = document.getElementById('cin');
+  const key = apiKey || localStorage.getItem('xai_gk') || 'NO KEY';
+  alert('KEY: ' + key.substring(0,12) + '...\nINPUT: ' + (inp ? inp.value : 'NO INPUT') + '\nAPI KEY VAR: ' + (typeof apiKey) + ' = ' + (apiKey ? 'SET' : 'EMPTY'));
+}
 
 /* ═══════════════════════════════════════════════════════
    PWA — Service Worker & Install
