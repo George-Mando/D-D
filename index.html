@@ -744,7 +744,7 @@ body::after{content:'';position:fixed;inset:0;background:radial-gradient(ellipse
           <button class="sb" onclick="ask(this)">What do I see?</button>
         </div>
         <div class="dm-chat-row">
-          <input class="cin" id="cin" placeholder="Describe your action, brave adventurer..." onkeydown="if(event.key==='Enter')send()"/>
+          <input class="cin" id="cin" placeholder="Describe your action, brave adventurer..." onkeydown="if(event.key==='Enter'){event.preventDefault();send();}"/>
           <button class="snd" id="sbtn" onclick="send()">⚔️ SEND</button>
         </div>
       </div>
@@ -2221,16 +2221,20 @@ function addMsg(type, html) {
  
 function send() {
   const inp = document.getElementById('cin');
-  const txt = inp.value.trim();
+  if (!inp) return;
+  const txt = (inp.value || '').trim();
   if (!txt) return;
   if (!apiKey) {
     addMsg('ai', '*The Oracle requires a Groq API key. Visit the LORE tab to awaken it.*');
+    inp.blur();
     return;
   }
-  addMsg('usr', txt);
+  inp.blur(); // dismiss keyboard on Android before processing
+  const savedTxt = txt;
   inp.value = '';
+  addMsg('usr', savedTxt);
   sfx_click();
-  sendToDM(txt, false);
+  setTimeout(function() { sendToDM(savedTxt, false); }, 50);
 }
  
 function ask(btn) {
