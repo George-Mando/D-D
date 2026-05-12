@@ -686,19 +686,14 @@ body::after{content:'';position:fixed;inset:0;background:radial-gradient(ellipse
           <div class="voice-bars" id="vbars"><div class="vb" id="v0"></div><div class="vb" id="v1"></div><div class="vb" id="v2"></div><div class="vb" id="v3"></div><div class="vb" id="v4"></div><div class="vb" id="v5"></div><div class="vb" id="v6"></div><div class="vb" id="v7"></div><div class="vb" id="v8"></div></div>
           <div style="width:100%;padding:0 4px;"><select class="voice-sel" id="voice-selector" onchange="onVoiceChange()"><option value="male">🎭 Male Voice</option><option value="female">🧙 Female Voice</option></select></div>
           <div class="oracle-controls">
-  <button class="oc-btn" id="sfx-toggle-btn" onclick="toggleSfxMasterDM()">🔊</button>
-  <button class="oc-btn" id="voice-toggle-btn" onclick="toggleVoice()">🎙</button>
-  <button class="oc-btn" onclick="openSaveConfirm()">💾</button>
-</div>
-<div class="oracle-controls">
   <button class="oc-btn" onclick="autoSave()">⚡AUTO</button>
   <button class="oc-btn" onclick="openPartyModal()">👥</button>
   <button class="oc-btn" style="font-size:5px;" onclick="showScreen('lore',document.querySelectorAll('.nav-tab')[6])">🔑KEY</button>
 </div>
 <div class="oracle-controls">
-  <button class="oc-btn" id="sync-voice-btn" onclick="unlockVoiceManually()"
-    style="font-size:6px;letter-spacing:0;border-color:var(--blood-bright);color:var(--blood-bright);">
-    🔊 SYNC VOICE
+  <button class="oc-btn" id="sync-voice-btn" onclick="unlockVoiceManually()" 
+    style="font-size:6px;letter-spacing:0;width:100%;border-color:var(--blood-bright);color:var(--blood-bright);">
+    🔊 TAP TO SYNC VOICE
   </button>
 </div>
           <div class="oracle-controls">
@@ -972,6 +967,24 @@ if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('./sw.js').then(reg => {
       console.log('SW registered:', reg.scope);
     }).catch(err => console.log('SW failed:', err));
+	document.addEventListener('touchstart', function unlockOnTouch() {
+    if (!window.speechUnlocked) {
+      if (window.speechSynthesis) {
+        const u = new SpeechSynthesisUtterance('');
+        u.volume = 0;
+        window.speechSynthesis.speak(u);
+        window.speechSynthesis.cancel();
+      }
+      if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+      window.speechUnlocked = true;
+      if (window._pendingSpeech) {
+        speak(window._pendingSpeech);
+        window._pendingSpeech = null;
+      }
+    }
+    document.removeEventListener('touchstart', unlockOnTouch);
+  }, { once: true });
+  });
 }
 
 window.addEventListener('beforeinstallprompt', (e) => {
@@ -2389,6 +2402,11 @@ async function sendToDM(userMsg, isSystem = false) {
     addMsg('ai', `*⚠️ Connection failed: ${e.message}. Check your internet connection and API key.*`);
     document.getElementById('fst').textContent = 'ERROR';
   }
+  
+   // ★ Broadcast SAME story to ALL party members simultaneously
+    if (!isSystem && partyCode && mqttConnected) {
+      broadcastStory(savedTxt || userMsg, dmText);
+    }
 	
   isStreaming = false;
   if (btn) { btn.disabled = false; btn.textContent = '⚔️ SEND'; }
@@ -2465,20 +2483,19 @@ function ask(btn) {
   if(goldEl) goldEl.textContent = gold;
 
   // Mobile: request wake lock only after user gesture
-  document.addEventListener('touchstart', function unlockOnTouch() {
-    if (!window.speechUnlocked) {
-      if (window.speechSynthesis) {
-        const u = new SpeechSynthesisUtterance('');
-        u.volume = 0;
-        window.speechSynthesis.speak(u);
-        window.speechSynthesis.cancel();
-      }
-      if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
-      window.speechUnlocked = true;
-      if (window._pendingSpeech) { speak(window._pendingSpeech); window._pendingSpeech = null; }
-    }
-    document.removeEventListener('touchstart', unlockOnTouch);
-  }, { once: true });
+  document.addEventListener('touchstart', function unlockAudio() {
+  // Unlock Web Audio
+  if (audioCtx && audioCtx.state === 'suspended') {
+    audioCtx.resume();
+  }
+  // Unlock Speech Synthesis on Android/iOS
+  if (window.speechSynthesis) {
+    const u = new SpeechSynthesisUtterance('');
+    u.volume = 0;
+    window.speechSynthesis.speak(u);
+  }
+  document.removeEventListener('touchstart', unlockAudio);
+}, { once: true });
 
   console.log('DM Oracle v4.6 — ready');
 })();
