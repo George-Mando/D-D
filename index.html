@@ -701,12 +701,6 @@ body::after{content:'';position:fixed;inset:0;background:radial-gradient(ellipse
     🔊 SYNC VOICE
   </button>
 </div>
-          <div class="oracle-controls">
-            <button class="oc-btn" onclick="autoSave()">⚡AUTO</button>
-            <button class="oc-btn" onclick="openPartyModal()">👥</button>
-            <button class="oc-btn" style="font-size:5px;" onclick="showScreen('lore',document.querySelectorAll('.nav-tab')[6])">🔑KEY</button>
-          </div>
-        </div>
         <div class="dm-panel dm-panel-tr" style="background:rgba(5,2,1,.9);">
           <div class="dm-panel-label">🎒 PACK <span id="dm-inv-count" style="color:var(--gold);">0/20</span></div>
           <div id="dm-inventory-list"><div style="font-family:'IM Fell English',serif;font-style:italic;font-size:9px;color:var(--parch-faint);text-align:center;padding:10px 0;">Pack is empty</div></div>
@@ -972,6 +966,7 @@ if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('./sw.js').then(reg => {
       console.log('SW registered:', reg.scope);
     }).catch(err => console.log('SW failed:', err));
+  });
 }
 
 window.addEventListener('beforeinstallprompt', (e) => {
