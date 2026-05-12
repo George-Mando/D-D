@@ -1031,7 +1031,7 @@ document.addEventListener('visibilitychange', async () => {
 ═══════════════════════════════════════════════════════ */
 let mqttClient = null, mqttConnected = false, partyCode = null, partyRole = null;
 let myPartyName = '', partyMembers = {};
-const MQTT_BROKER = 'wss://test.mosquitto.org:8081/mqtt';
+const MQTT_BROKER = 'wss://broker.emqx.io:8084/mqtt';
 
 function mqttTopic(suffix) { return 'dm-oracle-v46/' + partyCode + '/' + suffix; }
 
@@ -1105,9 +1105,12 @@ function mqttConnect(onConnected) {
   // Timeout if no connection after 12 seconds
   setTimeout(() => {
     if (!connected) {
-      setWsStatus('error', '⚠ TIMEOUT — Try a different network');
+      setWsStatus('error', '⚠ TIMEOUT — Check internet & try again');
+      // Auto-retry once
+      if (mqttClient) { try { mqttClient.end(true); } catch(e) {} mqttClient = null; }
+      mqttConnected = false;
     }
-  }, 12000);
+  }, 15000);
 }
 
 function handleMqttMessage(topic, payload) {
