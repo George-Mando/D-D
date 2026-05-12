@@ -1149,29 +1149,58 @@ function handleMqttMessage(topic, payload) {
     }
   }
   else if (msgType === 'story') {
-  if (payload.from !== myPartyName) {
-    if (payload.playerAction) {
-      addMsg('usr', `[${payload.from}]: ${payload.playerAction}`);
+    if (payload.from !== myPartyName) {
+      if (payload.playerAction) {
+        addMsg('usr', `[${payload.from}]: ${payload.playerAction}`);
+      }
+      const syncLabel = `<span class="story-sync-tag">📡 ${payload.from}</span>`;
+      const msgDiv = addMsg('ai', syncLabel + payload.dmText);
+      // Speak automatically if voice is unlocked
+      if (window.speechUnlocked) {
+        speak(payload.dmText);
+      } else {
+        // Add TAP TO HEAR button as fallback
+        const hearBtn = document.createElement('button');
+        hearBtn.textContent = '🔊 TAP TO HEAR';
+        hearBtn.style.cssText = 'margin-top:5px;padding:4px 10px;border:1px solid var(--gold);color:var(--gold);background:transparent;font-family:Cinzel,serif;font-size:7px;letter-spacing:1px;cursor:pointer;border-radius:2px;display:block;';
+        hearBtn.onclick = function() {
+          window.speechUnlocked = true;
+          speak(payload.dmText);
+          hearBtn.textContent = '🔊 PLAYING...';
+          hearBtn.disabled = true;
+        };
+        msgDiv.appendChild(hearBtn);
+      }
+      autoSFXFromText(payload.dmText);
+      parseAndApplyStatChanges(payload.dmText);
+      showSfxInd('📡 STORY FROM ' + payload.from.toUpperCase());
     }
-    const syncLabel = `<span class="story-sync-tag">📡 ${payload.from}</span>`;
-    const msgDiv = addMsg('ai', syncLabel + payload.dmText);
-    
-    // Add a TAP TO HEAR button so the player can trigger speech manually
-    const hearBtn = document.createElement('button');
-    hearBtn.textContent = '🔊 TAP TO HEAR';
-    hearBtn.style.cssText = 'margin-top:5px;padding:4px 10px;border:1px solid var(--gold);color:var(--gold);background:transparent;font-family:Cinzel,serif;font-size:7px;letter-spacing:1px;cursor:pointer;border-radius:2px;display:block;';
-    hearBtn.onclick = function() {
-      speak(payload.dmText);
-      hearBtn.textContent = '🔊 PLAYING...';
-      hearBtn.disabled = true;
-    };
-    msgDiv.appendChild(hearBtn);
-    
-    autoSFXFromText(payload.dmText);
-    parseAndApplyStatChanges(payload.dmText);
-    showSfxInd('📡 NEW STORY FROM ' + payload.from.toUpperCase());
   }
-}
+  else if (msgType === 'roll_result') {
+    if (payload.from !== myPartyName) {
+      addMsg('ai', `*🎲 ${payload.from} rolled <strong>${payload.result}</strong> on d${payload.die}${payload.type ? ' (' + payload.type + ')' : ''}*`);
+    }
+  }
+  else if (msgType === 'turn') {
+    const myName = myPartyName || localStorage.getItem('dm_char_name') || '';
+    if (payload.forPlayer === myName) {
+      showRollPrompt(payload.rollType || 'Attack', payload.die || 20,
+        `⚔️ YOUR TURN! Roll d${payload.die || 20}!`);
+      sfx_levelup();
+    }
+  }
+  else if (msgType === 'combat_start') {
+    if (!currentEnemy) {
+      spawnEnemy(payload.enemyName, payload.enemyHp || 20, []);
+    }
+  }
+  else if (msgType === 'enemy_hp') {
+    if (currentEnemy) {
+      currentEnemy.hp = payload.hp;
+      updateEnemyBar();
+    }
+  }
+} // ← closes handleMqttMessage
 
 function subscribeToParty() {
   if (!mqttClient || !partyCode) return;
