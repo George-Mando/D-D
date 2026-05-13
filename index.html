@@ -1033,8 +1033,8 @@ let mqttClient = null, mqttConnected = false, partyCode = null, partyRole = null
 let myPartyName = '', partyMembers = {};
 const MQTT_BROKERS = [
   'wss://broker.hivemq.com:8884/mqtt',
-  'wss://broker.emqx.io:8084/mqtt',
-  'wss://test.mosquitto.org:8081/mqtt'
+  'wss://mqtt.eclipseprojects.io:443/mqtt',
+  'wss://broker.emqx.io:8084/mqtt'
 ];
 let mqttBrokerIdx = 0;
 
@@ -1052,11 +1052,12 @@ function mqttConnect(onConnected) {
 
   try {
      mqttClient = mqtt.connect(MQTT_BROKERS[mqttBrokerIdx % MQTT_BROKERS.length], {
-      clientId,
+       clientId,
       clean: true,
       connectTimeout: 10000,
-      reconnectPeriod: 5000,
-      keepalive: 60,
+      reconnectPeriod: 0,
+      keepalive: 30,
+      protocolVersion: 4,
       will: {
         topic: mqttTopic('leave'),
         payload: JSON.stringify({ name: myPartyName }),
