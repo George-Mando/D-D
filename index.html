@@ -1100,7 +1100,7 @@ function mqttConnect(onConnected) {
        clientId,
       clean: true,
       connectTimeout: 10000,
-      reconnectPeriod: 0,
+      reconnectPeriod: 3000,
       keepalive: 30,
       protocolVersion: 4,
       will: {
