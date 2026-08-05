@@ -256,7 +256,10 @@ body::after{content:'';position:fixed;inset:0;background:radial-gradient(ellipse
 #party-modal{position:fixed;inset:0;background:rgba(0,0,0,.95);z-index:12000;display:none;flex-direction:column;align-items:center;justify-content:center;padding:20px;overflow-y:auto;}
 #party-modal.show{display:flex;}
 .party-modal-box{background:var(--stone-panel);border:2px solid var(--border-bright);border-radius:4px;padding:20px;width:100%;max-width:420px;}
-.party-modal-title{font-family:'Cinzel Decorative',serif;font-size:13px;letter-spacing:3px;color:var(--gold);margin-bottom:14px;text-align:center;}
+.party-modal-header{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px;}
+.party-modal-title{font-family:'Cinzel Decorative',serif;font-size:13px;letter-spacing:3px;color:var(--gold);text-align:center;flex:1;}
+.party-modal-close{flex-shrink:0;width:26px;height:26px;background:transparent;border:1px solid var(--border-bright);color:var(--parch-dim);font-family:'Cinzel',serif;font-size:12px;border-radius:3px;cursor:pointer;}
+.party-modal-close:active{border-color:var(--blood-bright);color:var(--blood-bright);}
 .party-tabs{display:flex;gap:0;margin-bottom:14px;border:1px solid var(--border-bright);border-radius:3px;overflow:hidden;}
 .party-tab-btn{flex:1;padding:7px;font-family:'Cinzel',serif;font-size:8px;letter-spacing:2px;cursor:pointer;background:transparent;border:none;color:var(--parch-faint);}
 .party-tab-btn.active{background:rgba(201,168,76,.1);color:var(--gold);}
@@ -529,7 +532,10 @@ body::after{content:'';position:fixed;inset:0;background:radial-gradient(ellipse
 <!-- PARTY MODAL -->
 <div id="party-modal">
   <div class="party-modal-box">
-    <div class="party-modal-title">⚔️ PARTY SYSTEM</div>
+    <div class="party-modal-header">
+      <div class="party-modal-title">⚔️ PARTY SYSTEM</div>
+      <button class="party-modal-close" onclick="closePartyModal()" aria-label="Close">✕</button>
+    </div>
     <div class="party-tabs">
       <button class="party-tab-btn active" onclick="switchPartyTab('host')">🏰 HOST</button>
       <button class="party-tab-btn" onclick="switchPartyTab('join')">🚪 JOIN</button>
@@ -570,6 +576,7 @@ body::after{content:'';position:fixed;inset:0;background:radial-gradient(ellipse
         </div>
         <div style="padding:8px;background:rgba(45,179,96,.06);border:1px solid var(--emerald-bright);border-radius:3px;margin-bottom:9px;font-family:'Share Tech Mono',monospace;font-size:8px;color:var(--emerald-bright);letter-spacing:1px;">📡 STORY SYNC ACTIVE — All players hear same DM narration</div>
         <div class="party-member-list" id="current-member-list"></div>
+        <button class="party-btn" onclick="closePartyModal()">← BACK TO GAME</button>
         <button class="party-btn" style="border-color:var(--blood-bright);color:var(--blood-bright);margin-top:3px;" onclick="leaveParty()">🚪 LEAVE PARTY</button>
       </div>
     </div>
