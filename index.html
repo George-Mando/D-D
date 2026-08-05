@@ -1076,9 +1076,17 @@ document.addEventListener('visibilitychange', async () => {
 ═══════════════════════════════════════════════════════ */
 let mqttClient = null, mqttConnected = false, partyCode = null, partyRole = null;
 let myPartyName = '', partyMembers = {};
+// Eclipse's broker is listed first because it runs on port 443 (the same
+// port as normal HTTPS traffic), so it's far less likely to be blocked by
+// a phone carrier, school/office Wi-Fi, or router firewall than the
+// custom ports below. If different party members land on different
+// brokers in this list (e.g. one device's network blocks port 8884 but
+// not 443), they silently can never see each other — same code, same
+// party code, but never synced. Putting the most universally-reachable
+// option first minimizes that risk.
 const MQTT_BROKERS = [
-  'wss://broker.hivemq.com:8884/mqtt',
   'wss://mqtt.eclipseprojects.io:443/mqtt',
+  'wss://broker.hivemq.com:8884/mqtt',
   'wss://broker.emqx.io:8084/mqtt'
 ];
 let mqttBrokerIdx = 0;
@@ -1120,7 +1128,7 @@ function mqttConnect(onConnected) {
   mqttClient.on('connect', () => {
     mqttConnected = true;
     connected = true;
-    setWsStatus('connected', '✓ CONNECTED — REALM ONLINE');
+    setWsStatus('connected', `✓ CONNECTED — REALM ONLINE (relay ${(mqttBrokerIdx % MQTT_BROKERS.length) + 1})`);
     showSfxInd('REALM CONNECTED');
     if (onConnected) onConnected();
   });
